@@ -17,14 +17,15 @@ export default function InductionDashboard() {
       return;
     }
 
-    axios.get(`http://localhost:5001/get-progress/${auth.user.id}`, {
-      headers: { Authorization: auth.token },
-    })
-    .then(res => {
-      setReadDocuments(res.data || {});
-      updateProgress(res.data);
-    })
-    .catch(err => console.error("Error loading progress:", err));
+    axios
+      .get(`http://localhost:5001/get-progress/${auth.user.id}`, {
+        headers: { Authorization: auth.token },
+      })
+      .then((res) => {
+        setReadDocuments(res.data || {});
+        updateProgress(res.data);
+      })
+      .catch((err) => console.error("Error loading progress:", err));
   }, [auth, navigate]);
 
   const updateProgress = (docs) => {
@@ -33,17 +34,27 @@ export default function InductionDashboard() {
     setProgress((readCount / totalDocs) * 100);
   };
 
+  // ✅ Define toggleReadStatus function correctly
   const toggleReadStatus = (docId) => {
+    console.log("Toggling Read Status for Doc:", docId);
+    
+    // ✅ Ensure `readDocuments` exists
     const updatedReadDocuments = { ...readDocuments, [docId]: !readDocuments[docId] };
     setReadDocuments(updatedReadDocuments);
     updateProgress(updatedReadDocuments);
 
-    axios.post("http://localhost:5001/save-progress", {
-      userId: auth.user.id,
-      readDocuments: updatedReadDocuments,
-    }, {
-      headers: { Authorization: auth.token },
-    }).catch(err => console.error("Error saving progress:", err));
+    axios
+      .post(
+        "http://localhost:5001/save-progress",
+        {
+          userId: auth.user.id,
+          readDocuments: updatedReadDocuments,
+        },
+        {
+          headers: { Authorization: auth.token },
+        }
+      )
+      .catch((err) => console.error("Error saving progress:", err));
   };
 
   const handleLogout = () => {
@@ -62,6 +73,8 @@ export default function InductionDashboard() {
       </div>
 
       <ProgressTracker progress={progress} />
+
+      {/* ✅ Pass toggleReadStatus as a prop */}
       <DocumentList toggleReadStatus={toggleReadStatus} readDocuments={readDocuments} />
     </div>
   );

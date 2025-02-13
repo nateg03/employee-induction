@@ -9,7 +9,7 @@ const documents = [
   { id: 5, title: "PPE Management Process (S015-3)", file: "COMS_S015_3.pdf" },
 ];
 
-export default function DocumentList({ toggleReadStatus, readDocuments }) {
+export default function DocumentList({ toggleReadStatus, readDocuments = {} }) {
   const [selectedDoc, setSelectedDoc] = useState(null);
 
   return (
@@ -30,10 +30,10 @@ export default function DocumentList({ toggleReadStatus, readDocuments }) {
             <button
               onClick={() => toggleReadStatus(doc.id)}
               className={`mt-2 px-3 py-1 text-white rounded-md text-sm transition ${
-                readDocuments[doc.id] ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600"
+                readDocuments?.[doc.id] ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600"
               }`}
             >
-              {readDocuments[doc.id] ? "Mark as Unread" : "Mark as Read"}
+              {readDocuments?.[doc.id] ? "Mark as Unread" : "Mark as Read"}
             </button>
           </div>
         ))}

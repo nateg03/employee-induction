@@ -1,45 +1,45 @@
-import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
+import React, { useEffect, useState, useContext } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./components/auth/Login";
 import InductionDashboard from "./components/Induction/InductionDashboard";
 import AdminDashboard from "./components/Induction/AdminDashboard";
-import { AuthProvider } from "./components/auth/AuthContext";
+import { AuthProvider, AuthContext } from "./components/auth/AuthContext";
 import axios from "axios";
 
-export default function App() {
-  const [auth, setAuth] = useState(() => {
-    const savedAuth = localStorage.getItem("auth");
-    return savedAuth ? JSON.parse(savedAuth) : { user: null, token: null };
-  });
+function App() {
+  const { auth, setAuth } = useContext(AuthContext);
 
   useEffect(() => {
-    const token = auth?.token;
+    const token = localStorage.getItem("token");
     if (token) {
-      axios.get("http://localhost:5001/auth/me", { headers: { Authorization: token } })
-        .then(res => setAuth(prev => ({ ...prev, user: res.data })))
-        .catch(() => {
-          localStorage.removeItem("auth");
-          setAuth({ user: null, token: null });
-        });
+      axios.get("http://localhost:5001/auth/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(res => setAuth({ user: res.data, token }))
+      .catch(() => {
+        localStorage.removeItem("token");
+        setAuth({ user: null, token: null });
+      });
     }
-  }, []);
-
-  const logout = () => {
-    setAuth({ user: null, token: null });
-    localStorage.removeItem("auth");
-  };
+  }, [setAuth]);
 
   return (
+    <Router>
+      <Routes>
+        <Route path="/" element={auth.user ? <Navigate to="/induction" /> : <Navigate to="/login" />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/induction" element={auth.user ? <InductionDashboard /> : <Navigate to="/login" />} />
+        <Route path="/admin" element={auth.user?.role === "admin" ? <AdminDashboard /> : <Navigate to="/login" />} />
+        <Route path="*" element={<h1>404 - Page Not Found</h1>} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default function WrappedApp() {
+  return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={auth.user ? <Navigate to="/induction" /> : <Navigate to="/login" />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/induction" element={auth.user ? <InductionDashboard logout={logout} /> : <Navigate to="/login" />} />
-          <Route path="/admin" element={auth.user?.role === "admin" ? <AdminDashboard logout={logout} /> : <Navigate to="/login" />} />
-          <Route path="*" element={<h1>404 - Page Not Found</h1>} />
-        </Routes>
-      </Router>
+      <App />
     </AuthProvider>
   );
 }
