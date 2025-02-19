@@ -12,20 +12,26 @@ export default function InductionDashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!auth.user) {
+    if (!auth || !auth.user) {
+      console.warn("⚠️ No authenticated user, redirecting to login.");
       navigate("/login");
       return;
     }
+
+    console.log(`✅ Fetching progress for user: ${auth.user.id}`);
 
     axios
       .get(`http://localhost:5001/get-progress/${auth.user.id}`, {
         headers: { Authorization: auth.token },
       })
       .then((res) => {
+        console.log("✅ Progress data received:", res.data);
         setReadDocuments(res.data || {});
         updateProgress(res.data);
       })
-      .catch((err) => console.error("Error loading progress:", err));
+      .catch((err) => {
+        console.error("❌ Error loading progress:", err);
+      });
   }, [auth, navigate]);
 
   const updateProgress = (docs) => {
@@ -34,14 +40,12 @@ export default function InductionDashboard() {
     setProgress((readCount / totalDocs) * 100);
   };
 
-  // ✅ Define toggleReadStatus function correctly
   const toggleReadStatus = (docId) => {
-    console.log("Toggling Read Status for Doc:", docId);
-    
-    // ✅ Ensure `readDocuments` exists
     const updatedReadDocuments = { ...readDocuments, [docId]: !readDocuments[docId] };
     setReadDocuments(updatedReadDocuments);
     updateProgress(updatedReadDocuments);
+
+    console.log("🟡 Saving progress update:", updatedReadDocuments);
 
     axios
       .post(
@@ -50,15 +54,15 @@ export default function InductionDashboard() {
           userId: auth.user.id,
           readDocuments: updatedReadDocuments,
         },
-        {
-          headers: { Authorization: auth.token },
-        }
+        { headers: { Authorization: auth.token } }
       )
-      .catch((err) => console.error("Error saving progress:", err));
+      .then(() => console.log("✅ Progress saved successfully!"))
+      .catch((err) => console.error("❌ Error saving progress:", err));
   };
 
   const handleLogout = () => {
-    setAuth({ user: null, token: null });
+    console.log("🔴 Logging out user...");
+    setAuth(null);
     localStorage.removeItem("auth");
     navigate("/login");
   };
@@ -72,9 +76,10 @@ export default function InductionDashboard() {
         </button>
       </div>
 
+      {/* Progress Bar */}
       <ProgressTracker progress={progress} />
 
-      {/* ✅ Pass toggleReadStatus as a prop */}
+      {/* Document List */}
       <DocumentList toggleReadStatus={toggleReadStatus} readDocuments={readDocuments} />
     </div>
   );
