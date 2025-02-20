@@ -1,74 +1,63 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext } from "react";
 import axios from "axios";
+import { AuthContext } from "../auth/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "./AuthContext";
 
 export default function Login() {
-  const { auth, setAuth } = useContext(AuthContext);
+  const { setAuth } = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  // 🟢 Check if user is already logged in and redirect to dashboard
-  useEffect(() => {
-    if (auth.user) {
-      navigate("/induction", { replace: true });
-    }
-  }, [auth.user, navigate]);
-
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError(""); // Clear errors
+    setError(""); // Reset error message
 
     try {
+      console.log("🔵 Logging in with:", email, password);
       const res = await axios.post("http://localhost:5001/auth/login", { email, password });
+      console.log("✅ API Response:", res.data);
 
-      console.log("🔵 API Response:", res.data);
+      if (res.data.token && res.data.user) {
+        localStorage.setItem("authToken", res.data.token);
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        setAuth({ token: res.data.token, user: res.data.user });
 
-      if (res.data.token) {
-        console.log("✅ Storing auth data in localStorage");
-        localStorage.setItem("auth", JSON.stringify(res.data));
-
-        setAuth(res.data); // Update global auth state
-        console.log("✅ Redirecting to /induction...");
-        navigate("/induction", { replace: true });
+        console.log("✅ Storing in LocalStorage:", res.data);
+        navigate("/induction");
       } else {
-        setError("Invalid credentials. Please try again.");
+        setError("Invalid login response from server.");
       }
     } catch (err) {
-      console.error("🔴 Login Error:", err.response?.data || err.message);
-      setError("Invalid email or password. Please try again.");
+      console.error("❌ Login Error:", err.response?.data?.error || err.message);
+      setError(err.response?.data?.error || "Login failed.");
     }
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-        <h2 className="text-2xl font-semibold mb-4">Login</h2>
+    <div className="flex justify-center items-center h-screen bg-gray-100 dark:bg-gray-900">
+      <form onSubmit={handleLogin} className="bg-white p-6 rounded-lg shadow-md w-96">
+        <h2 className="text-2xl font-bold mb-4">Login</h2>
         {error && <p className="text-red-500">{error}</p>}
-        <form onSubmit={handleLogin}>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 mb-3 border rounded"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 mb-3 border rounded"
-            required
-          />
-          <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition">
-            Login
-          </button>
-        </form>
-      </div>
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full p-2 mb-2 border rounded"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          className="w-full p-2 mb-4 border rounded"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded">
+          Login
+        </button>
+      </form>
     </div>
   );
 }

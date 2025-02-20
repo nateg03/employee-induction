@@ -4,36 +4,20 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [auth, setAuth] = useState(() => {
-    try {
-      const savedAuth = localStorage.getItem("auth");
-      return savedAuth ? JSON.parse(savedAuth) : { user: null, token: null };
-    } catch {
-      return { user: null, token: null };
-    }
+    const token = localStorage.getItem("authToken");
+    const user = localStorage.getItem("user");
+    return token && user ? { token, user: JSON.parse(user) } : null;
   });
 
-  // 🟢 Restore authentication from localStorage when the app loads
   useEffect(() => {
-    if (!auth.user) {
-      const savedAuth = localStorage.getItem("auth");
-      if (savedAuth) {
-        setAuth(JSON.parse(savedAuth));
-      }
-    }
-  }, []);
-
-  // 🟢 Sync `auth` state with `localStorage`
-  useEffect(() => {
-    if (auth.user) {
-      localStorage.setItem("auth", JSON.stringify(auth));
+    if (auth) {
+      localStorage.setItem("authToken", auth.token);
+      localStorage.setItem("user", JSON.stringify(auth.user));
     } else {
-      localStorage.removeItem("auth");
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("user");
     }
   }, [auth]);
 
-  return (
-    <AuthContext.Provider value={{ auth, setAuth }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ auth, setAuth }}>{children}</AuthContext.Provider>;
 };

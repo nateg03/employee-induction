@@ -1,72 +1,125 @@
-require("dotenv").config();
 const express = require("express");
+const mysql = require("mysql2");
 const cors = require("cors");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const db = require("./database");
-const authRoutes = require("./routes/authRoutes");
+require("dotenv").config();
 
 const app = express();
 app.use(express.json());
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(cors());
 
-console.log("✅ Backend running on http://localhost:5001");
-
-// ✅ Authentication Routes
-app.use("/auth", authRoutes);
-
-// ✅ Fix: Route to Get User Progress
-app.get("/get-progress/:userId", (req, res) => {
-  const userId = req.params.userId;
-
-  db.all("SELECT document_name, is_read FROM read_progress WHERE user_id = ?", [userId], (err, rows) => {
-      if (err) {
-          console.error("❌ Database error fetching progress:", err);
-          return res.status(500).json({ error: "Database error" });
-      }
-
-      if (!rows || rows.length === 0) {
-          console.warn("⚠️ No progress found for this user.");
-          return res.json({});
-      }
-
-      const progressData = {};
-      rows.forEach((row) => {
-          progressData[row.document_name] = row.is_read === 1;
-      });
-
-      res.json(progressData);
-  });
+// ✅ MySQL Database Connection
+const db = mysql.createConnection({
+    host: "localhost",
+    user: "root",
+    password: "n!n3r3dmonk3ys!",
+    database: "induction",
 });
 
+db.connect((err) => {
+    if (err) {
+        console.error("❌ MySQL Connection Failed:", err.message);
+        return;
+    }
+    console.log("✅ MySQL Database Connected!");
+});
 
-// ✅ Fix: Route to Save Progress
-app.post("/save-progress", async (req, res) => {
+// ✅ User Login Route
+app.post("/auth/login", (req, res) => {
+    const { email, password } = req.body;
+    console.log("🟡 Login Attempt:", email);
+
+    db.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
+        if (err) {
+            console.error("❌ Database error:", err);
+            return res.status(500).json({ error: "Server error" });
+        }
+        if (results.length === 0) {
+            console.log("❌ User not found:", email);
+            return res.status(400).json({ error: "Invalid email or password" });
+        }
+
+        const user = results[0];
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            console.log("❌ Password incorrect for:", email);
+            return res.status(400).json({ error: "Invalid email or password" });
+        }
+
+        const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
+        console.log("✅ Login successful for:", email);
+        res.json({ token, user });
+    });
+});
+
+// ✅ Save Induction Progress
+app.post("/auth/save-progress", (req, res) => {
     const { userId, readDocuments } = req.body;
 
-    if (!userId) {
-        return res.status(400).json({ error: "User ID is required" });
+    if (!userId || !readDocuments) {
+        return res.status(400).json({ error: "Missing userId or readDocuments" });
     }
 
-    try {
-        db.serialize(() => {
-            Object.keys(readDocuments).forEach(docName => {
-                db.run(
-                    `INSERT INTO read_progress (user_id, document_name, is_read) 
-                     VALUES (?, ?, ?) 
-                     ON CONFLICT(user_id, document_name) 
-                     DO UPDATE SET is_read = excluded.is_read`,
-                    [userId, docName, readDocuments[docName] ? 1 : 0]
-                );
-            });
+    console.log("🟡 Saving progress for user", userId, ":", readDocuments);
+
+    const queries = Object.keys(readDocuments).map(documentName => {
+        return new Promise((resolve, reject) => {
+            db.query(
+                `INSERT INTO read_progress (user_id, document_name, is_read) 
+                 VALUES (?, ?, ?) 
+                 ON DUPLICATE KEY UPDATE is_read = VALUES(is_read)`,
+                [userId, documentName, readDocuments[documentName] ? 1 : 0],
+                (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                }
+            );
         });
+    });
 
-        res.json({ success: true, message: "Progress updated successfully" });
-    } catch (error) {
-        console.error("❌ Error saving progress:", error);
-        res.status(500).json({ error: "Failed to save progress" });
-    }
+    Promise.all(queries)
+        .then(() => {
+            console.log("✅ Progress saved successfully");
+            res.json({ message: "Progress saved" });
+        })
+        .catch(err => {
+            console.error("❌ Error saving progress:", err.message);
+            res.status(500).json({ error: "Failed to save progress" });
+        });
+});
+
+// ✅ Get Induction Progress
+app.get("/auth/get-progress/:userId", (req, res) => {
+    const { userId } = req.params;
+
+    db.query(
+        "SELECT document_name, is_read FROM read_progress WHERE user_id = ?",
+        [userId],
+        (err, results) => {
+            if (err) {
+                console.error("❌ Error fetching progress:", err.message);
+                return res.status(500).json({ error: "Failed to fetch progress" });
+            }
+
+            if (results.length === 0) {
+                console.log("⚠️ No progress found for user:", userId);
+                return res.json({});
+            }
+
+            const progressData = {};
+            results.forEach(row => {
+                progressData[row.document_name] = row.is_read === 1;
+            });
+
+            console.log("✅ Progress fetched successfully:", progressData);
+            res.json(progressData);
+        }
+    );
 });
 
 // ✅ Start Server
-const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => console.log(`✅ Backend running on http://localhost:${PORT}`));
+const PORT = 5001;
+app.listen(PORT, () => {
+    console.log(`✅ Backend running on http://localhost:${PORT}`);
+});
