@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "server": "cd backend && node index2.js",
+    "client": "cd frontend && npm start",
+    "start": "concurrently \"npm run server\" \"npm run client\""
   },
   "keywords": [],
   "author": "",
@@ -19,6 +21,7 @@
     "mariadb": "^3.4.0",
     "mongodb": "^6.13.0",
     "mongoose": "^8.10.0",
+    "mysql2": "^3.12.0",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {

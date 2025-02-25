@@ -1,27 +1,28 @@
 import React, { useContext } from "react";
-import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
-import Login from "./components/auth/Login";  // ✅ Fix import path
-import InductionDashboard from "./components/Induction/InductionDashboard";  // ✅ Fix import path
-import { AuthContext } from "./components/auth/AuthContext";  // ✅ Fix import path
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, AuthContext } from "./components/auth/AuthContext";
+import Login from "./components/auth/Login";
+import AdminDashboard from "./components/Induction/AdminDashboard";
+import InductionDashboard from "./components/Induction/InductionDashboard";
 
-
+function ProtectedRoute({ children, role }) {
+    const { auth } = useContext(AuthContext);
+    if (!auth.user) return <Navigate to="/login" />;
+    if (role && auth.user.role !== role) return <Navigate to="/" />;
+    return children;
+}
 
 export default function App() {
-  const { auth, setAuth } = useContext(AuthContext);
-
-  const logout = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("user");
-    setAuth(null);
-  };
-
-  return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={!auth ? <Login /> : <Navigate to="/induction" />} />
-        <Route path="/induction" element={auth ? <InductionDashboard logout={logout} /> : <Navigate to="/login" />} />
-        <Route path="*" element={<Navigate to={auth ? "/induction" : "/login"} />} />
-      </Routes>
-    </Router>
-  );
+    return (
+        <AuthProvider>
+            <Router>
+                <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/admin" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
+                    <Route path="/induction" element={<ProtectedRoute><InductionDashboard /></ProtectedRoute>} />
+                    <Route path="*" element={<Navigate to="/login" />} />
+                </Routes>
+            </Router>
+        </AuthProvider>
+    );
 }

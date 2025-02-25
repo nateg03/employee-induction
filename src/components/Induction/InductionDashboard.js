@@ -13,26 +13,32 @@ export default function InductionDashboard({ logout }) {
 
   useEffect(() => {
     if (!auth.user) {
-      navigate("/login");
-      return;
+        navigate("/login");
+        return;
+    }
+
+    if (auth.user.role === "admin") {
+        navigate("/admin-dashboard");
+        return;
     }
 
     console.log("🟢 Fetching progress for user:", auth.user.id);
 
     axios.get(`http://localhost:5001/auth/get-progress/${auth.user.id}`, {
-      headers: { Authorization: auth.token },
+        headers: { Authorization: auth.token },
     })
     .then(res => {
-      if (res.data) {
-        console.log("✅ Progress Data:", res.data);
-        setReadDocuments(res.data);
-        updateProgress(res.data);
-      } else {
-        console.log("⚠️ No progress data found.");
-      }
+        if (res.data) {
+            console.log("✅ Progress Data:", res.data);
+            setReadDocuments(res.data);
+            updateProgress(res.data);
+        } else {
+            console.log("⚠️ No progress data found.");
+        }
     })
     .catch(err => console.error("❌ Error loading progress:", err));
-  }, [auth, navigate]);
+}, [auth, navigate]);
+
 
   const updateProgress = (docs) => {
     const totalDocs = 5;

@@ -1,26 +1,45 @@
-router.post("/login", async (req, res) => {
-    const { email, password } = req.body;
-    console.log("🟡 Login Attempt:", email);
+import React, { createContext, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
-    db.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
-        if (err) {
-            console.error("❌ Database error:", err);
-            return res.status(500).json({ error: "Server error" });
-        }
-        if (results.length === 0) {
-            console.log("❌ User not found:", email);
-            return res.status(400).json({ error: "Invalid email or password" });
-        }
+export const AuthContext = createContext();
 
-        const user = results[0];
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            console.log("❌ Password incorrect for:", email);
-            return res.status(400).json({ error: "Invalid email or password" });
-        }
+export const AuthProvider = ({ children }) => {
+  const [auth, setAuth] = useState(() => {
+    const storedAuth = localStorage.getItem("auth");
+    return storedAuth ? JSON.parse(storedAuth) : { user: null, token: null };
+  });
 
-        const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
-        console.log("✅ Login successful for:", email);
-        res.json({ token, user });
-    });
-});
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!auth.user) {
+      console.log("⚠️ No user found, redirecting to login...");
+      navigate("/login");
+    }
+  }, [auth, navigate]);
+
+  const login = (userData) => {
+    console.log("✅ User Logged In:", userData);
+    setAuth(userData);
+    localStorage.setItem("auth", JSON.stringify(userData));
+
+    if (userData.user.role === "admin") {
+      navigate("/admin"); // ✅ Redirect to Admin Dashboard
+    } else {
+      navigate("/induction"); // ✅ Redirect to Employee Dashboard
+    }
+  };
+
+  const logout = () => {
+    console.log("🔴 Logging out...");
+    setAuth({ user: null, token: null });
+    localStorage.removeItem("auth");
+    navigate("/login");
+  };
+
+  return (
+    <AuthContext.Provider value={{ auth, setAuth, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
