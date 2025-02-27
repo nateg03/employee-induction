@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { FaUserPlus, FaSignOutAlt, FaTrash, FaUsers } from "react-icons/fa";
 
-export default function AdminDashboard({ logout }) {
+export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [newUser, setNewUser] = useState({ username: "", email: "", password: "", role: "employee" });
   const [message, setMessage] = useState("");
@@ -11,31 +11,27 @@ export default function AdminDashboard({ logout }) {
   // ✅ Fetch Users
   const fetchUsers = async () => {
     try {
-        const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token");
 
-        if (!token) {
-            setMessage("⚠️ No token found. Please log in.");
-            setLoading(false);
-            return;
-        }
-
-        console.log("🟢 Sending Token:", token); // ✅ Debugging Log
-
-        const res = await axios.get("http://localhost:5001/auth/users", {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-
-        setUsers(res.data);
+      if (!token) {
+        setMessage("⚠️ No token found. Please log in.");
         setLoading(false);
-        setMessage(""); // ✅ Clear errors
+        return;
+      }
+
+      const res = await axios.get("http://localhost:5001/auth/users", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setUsers(res.data);
+      setLoading(false);
+      setMessage(""); // ✅ Clear errors
     } catch (err) {
-        console.error("❌ Fetch Users Error:", err.response?.data || err.message);
-        setMessage("⚠️ Unauthorized. Please log in again.");
-        setLoading(false);
+      console.error("❌ Fetch Users Error:", err.response?.data || err.message);
+      setMessage("⚠️ Unauthorized. Please log in again.");
+      setLoading(false);
     }
-};
-
-  
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -57,26 +53,40 @@ export default function AdminDashboard({ logout }) {
   };
 
   // ✅ Delete User
-  const handleDeleteUser = async (id) => {
+  const handleDeleteUser = async (userId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:5001/auth/users/${id}`, {
+      if (!token) {
+        setMessage("⚠️ No token found. Please log in.");
+        return;
+      }
+
+      await axios.delete(`http://localhost:5001/auth/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setMessage("🗑️ User deleted successfully!");
-      fetchUsers();
+
+      setUsers(users.filter((user) => user.id !== userId)); // ✅ Update list without reloading
+      setMessage("✅ User deleted successfully.");
     } catch (err) {
-      console.error("❌ Error deleting user:", err.response?.data || err.message);
+      console.error("❌ Delete User Error:", err.response?.data || err.message);
       setMessage("⚠️ Failed to delete user.");
     }
+  };
+
+  // ✅ Logout Function (FIXED)
+  const handleLogout = () => {
+    localStorage.removeItem("token"); // ✅ Clear token
+    window.location.href = "/login";  // ✅ Redirect to login page
   };
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-10 flex flex-col items-center">
       {/* Dashboard Header */}
       <div className="w-full flex justify-between items-center mb-6 p-4 bg-blue-600 text-white rounded-lg shadow-md">
-        <h1 className="text-3xl font-bold flex items-center"><FaUsers className="mr-3" /> Admin Dashboard</h1>
-        <button onClick={logout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center">
+        <h1 className="text-3xl font-bold flex items-center">
+          <FaUsers className="mr-3" /> Admin Dashboard
+        </h1>
+        <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center">
           <FaSignOutAlt className="mr-2" /> Logout
         </button>
       </div>
