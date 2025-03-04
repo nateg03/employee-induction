@@ -17,7 +17,17 @@ const verifyToken = (req, res, next) => {
     });
 };
 
-// ✅ Fetch All Users with Progress for Admin Dashboard
+// ✅ Fetch User Info
+router.get("/me", verifyToken, (req, res) => {
+    db.query("SELECT id, username, email, role FROM users WHERE id = ?", [req.user.id], (err, results) => {
+        if (err || results.length === 0) {
+            return res.status(500).json({ error: "User not found" });
+        }
+        res.json({ user: results[0] });
+    });
+});
+
+// ✅ Fetch Users with Progress
 router.get("/users-progress", verifyToken, (req, res) => {
     const query = `
         SELECT users.id, users.username, users.email, users.role, 
@@ -28,10 +38,7 @@ router.get("/users-progress", verifyToken, (req, res) => {
     `;
 
     db.query(query, (err, results) => {
-        if (err) {
-            console.error("❌ Error fetching user progress:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
+        if (err) return res.status(500).json({ error: "Database error" });
         res.json(results);
     });
 });
@@ -46,91 +53,43 @@ router.post("/register", async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const query = "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)";
-
-        db.query(query, [username, email, hashedPassword, role], (err) => {
-            if (err) {
-                console.error("❌ Registration Error:", err);
-                return res.status(500).json({ error: "Failed to register user" });
+        db.query("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)",
+            [username, email, hashedPassword, role],
+            (err) => {
+                if (err) return res.status(500).json({ error: "Registration failed" });
+                res.json({ message: "✅ User registered successfully" });
             }
-            res.json({ message: "✅ User registered successfully" });
-        });
+        );
     } catch (err) {
-        console.error("❌ Hashing Error:", err);
         res.status(500).json({ error: "Server error" });
     }
-});
-
-// ✅ Delete User
-router.delete("/users/:id", verifyToken, (req, res) => {
-    const userId = req.params.id;
-
-    if (req.user.role !== "admin") {
-        return res.status(403).json({ error: "Unauthorized action" });
-    }
-
-    db.query("DELETE FROM users WHERE id = ?", [userId], (err) => {
-        if (err) {
-            console.error("❌ Delete User Error:", err);
-            return res.status(500).json({ error: "Failed to delete user" });
-        }
-        res.json({ message: "✅ User deleted successfully" });
-    });
 });
 
 // ✅ User Login
 router.post("/login", (req, res) => {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-        return res.status(400).json({ error: "Email and password are required" });
-    }
-
     db.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
-        if (err) {
-            console.error("❌ Login Query Error:", err);
-            return res.status(500).json({ error: "Server error" });
-        }
-        if (results.length === 0) {
-            return res.status(401).json({ error: "Invalid email or password" });
-        }
+        if (err || results.length === 0) return res.status(401).json({ error: "Invalid email or password" });
 
         const user = results[0];
         const isMatch = await bcrypt.compare(password, user.password);
 
-        if (!isMatch) {
-            return res.status(401).json({ error: "Invalid email or password" });
-        }
+        if (!isMatch) return res.status(401).json({ error: "Invalid email or password" });
 
-        const token = jwt.sign(
-            { id: user.id, email: user.email, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: "1h" }
-        );
+        const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
         res.json({ message: "✅ Login successful", token, user });
     });
 });
 
-// ✅ Fetch Progress for an Individual User
+// ✅ Fetch User Progress
 router.get("/get-progress/:userId", verifyToken, (req, res) => {
-    const userId = req.params.userId;
+    db.query("SELECT document_name, is_read FROM read_progress WHERE user_id = ?", [req.params.userId], (err, results) => {
+        if (err) return res.status(500).json({ error: "Database error" });
 
-    const query = `
-        SELECT document_name, is_read
-        FROM read_progress
-        WHERE user_id = ?;
-    `;
-
-    db.query(query, [userId], (err, results) => {
-        if (err) {
-            console.error("❌ Error fetching progress:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
         const progressData = {};
-        results.forEach((row) => {
-            progressData[row.document_name] = row.is_read;
-        });
+        results.forEach(row => progressData[row.document_name] = row.is_read);
 
         res.json(progressData);
     });
@@ -144,42 +103,15 @@ router.post("/save-progress", verifyToken, (req, res) => {
         return res.status(400).json({ error: "User ID and progress data are required" });
     }
 
-    // ✅ Bulk Insert / Update Query
-    const progressUpdates = Object.entries(readDocuments).map(([doc, isRead]) => {
-        return [userId, doc, isRead ? 1 : 0];
-    });
+    const progressUpdates = Object.entries(readDocuments).map(([doc, isRead]) => [userId, doc, isRead ? 1 : 0]);
 
-    const deleteQuery = "DELETE FROM read_progress WHERE user_id = ?";
-    const insertQuery = "INSERT INTO read_progress (user_id, document_name, is_read) VALUES ?";
+    db.query("DELETE FROM read_progress WHERE user_id = ?", [userId], (err) => {
+        if (err) return res.status(500).json({ error: "Failed to update progress" });
 
-    db.query(deleteQuery, [userId], (err) => {
-        if (err) {
-            console.error("❌ Error clearing progress:", err);
-            return res.status(500).json({ error: "Failed to update progress" });
-        }
-
-        db.query(insertQuery, [progressUpdates], (err) => {
-            if (err) {
-                console.error("❌ Error saving progress:", err);
-                return res.status(500).json({ error: "Failed to save progress" });
-            }
+        db.query("INSERT INTO read_progress (user_id, document_name, is_read) VALUES ?", [progressUpdates], (err) => {
+            if (err) return res.status(500).json({ error: "Failed to save progress" });
             res.json({ message: "✅ Progress saved successfully" });
         });
-    });
-});
-
-// ✅ Fetch All Users
-router.get("/users", verifyToken, (req, res) => {
-    if (req.user.role !== "admin") {
-        return res.status(403).json({ error: "Unauthorized access" });
-    }
-
-    db.query("SELECT id, username, email, role FROM users", (err, results) => {
-        if (err) {
-            console.error("❌ Error fetching users:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
-        res.json(results);
     });
 });
 
