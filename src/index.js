@@ -1,14 +1,15 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 import App from "./App";
-import "./index.css";  // ✅ Ensures Tailwind CSS loads
-import { AuthProvider } from "./components/auth/AuthContext"; // ✅ Ensure correct import
+import { AuthProvider } from "./components/auth/AuthContext";
+import "./index.css"; // Ensure styles are loaded
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
-  <React.StrictMode>
-    <AuthProvider> {/* ✅ Wrap the entire app */}
+  <BrowserRouter> 
+    <AuthProvider>
       <App />
     </AuthProvider>
-  </React.StrictMode>
+  </BrowserRouter>
 );

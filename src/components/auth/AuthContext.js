@@ -4,20 +4,35 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [auth, setAuth] = useState(() => {
-    const token = localStorage.getItem("authToken");
-    const user = localStorage.getItem("user");
-    return token && user ? { token, user: JSON.parse(user) } : null;
+    try {
+      const storedAuth = localStorage.getItem("auth");
+      return storedAuth ? JSON.parse(storedAuth) : { user: null, token: null };
+    } catch (error) {
+      console.error("❌ Error parsing auth data:", error);
+      return { user: null, token: null };
+    }
   });
 
   useEffect(() => {
-    if (auth) {
-      localStorage.setItem("authToken", auth.token);
-      localStorage.setItem("user", JSON.stringify(auth.user));
-    } else {
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("user");
-    }
-  }, [auth]);
+    console.log("🔄 Checking user session...");
+  }, []); // ✅ This ensures no unnecessary re-renders
 
-  return <AuthContext.Provider value={{ auth, setAuth }}>{children}</AuthContext.Provider>;
+  const login = (userData) => {
+    console.log("✅ User Logged In:", userData);
+    setAuth(userData);
+    localStorage.setItem("auth", JSON.stringify(userData));
+  };
+
+  const logout = () => {
+    console.log("🔴 Logging out...");
+    localStorage.removeItem("auth");
+    setAuth({ user: null, token: null });
+    window.location.href = "/login"; // ✅ Forces full refresh to clear session
+  };
+
+  return (
+    <AuthContext.Provider value={{ auth, setAuth, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

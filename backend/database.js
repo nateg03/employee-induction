@@ -1,4 +1,4 @@
-require("dotenv").config(); // Load environment variables
+require("dotenv").config({ path: "./backend/.env" });
 const mysql = require("mysql2");
 
 const db = mysql.createConnection({

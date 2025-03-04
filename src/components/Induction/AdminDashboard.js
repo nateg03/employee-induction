@@ -8,7 +8,7 @@ export default function AdminDashboard() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // ✅ Fetch Users
+  // ✅ Fetch Users with Saved Progress
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -19,7 +19,7 @@ export default function AdminDashboard() {
         return;
       }
 
-      const res = await axios.get("http://localhost:5001/auth/users", {
+      const res = await axios.get("http://localhost:5001/auth/users-progress", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -73,7 +73,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // ✅ Logout Function (FIXED)
+  // ✅ Logout Function
   const handleLogout = () => {
     localStorage.removeItem("token"); // ✅ Clear token
     window.location.href = "/login";  // ✅ Redirect to login page
@@ -146,6 +146,7 @@ export default function AdminDashboard() {
                 <th className="border p-2">Username</th>
                 <th className="border p-2">Email</th>
                 <th className="border p-2">Role</th>
+                <th className="border p-2">Progress</th>
                 <th className="border p-2">Actions</th>
               </tr>
             </thead>
@@ -155,6 +156,7 @@ export default function AdminDashboard() {
                   <td className="p-2">{user.username}</td>
                   <td className="p-2">{user.email}</td>
                   <td className="p-2">{user.role}</td>
+                  <td className="p-2">{user.progress}%</td> {/* ✅ Shows actual saved progress */}
                   <td className="p-2">
                     <button
                       onClick={() => handleDeleteUser(user.id)}
