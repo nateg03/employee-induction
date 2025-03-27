@@ -1,44 +1,35 @@
-import React, { useState } from "react";
-import PdfViewer from "./Documents/PdfViewer";
-
-const documents = [
-  { id: 1, title: "COMS Induction - Employees (QOP011-3)", file: "COMS_QOP011_3.pdf" },
-  { id: 2, title: "Windows 10 Settings for COMS IT Equipment (S008-7)", file: "COMS_S008_7.pdf" },
-  { id: 3, title: "Modern Slavery Act 2015, COMS Statement (S009-7)", file: "COMS_S009_7.pdf" },
-  { id: 4, title: "Incident Investigation & Learning Procedure (S014-4)", file: "COMS_S014_4.pdf" },
-  { id: 5, title: "PPE Management Process (S015-3)", file: "COMS_S015_3.pdf" },
-];
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
 export default function DocumentList({ toggleReadStatus, readDocuments }) {
-  const [selectedDoc, setSelectedDoc] = useState(null);
+  const [documents, setDocuments] = useState([]);
+
+  useEffect(() => {
+    axios.get("http://localhost:5001/documents").then((res) => {
+      setDocuments(res.data);
+    });
+  }, []);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 min-h-[85vh]">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full lg:w-1/4 h-fit">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-200 mb-4">📂 Induction Documents</h2>
-        {documents.map((doc) => (
-          <div key={doc.id} className="mb-3">
+    <div className="space-y-4">
+      {documents.map((doc) => (
+        <div key={doc.id} className="border p-4 rounded shadow bg-white">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">{doc.title}</h3>
             <button
-              onClick={() => setSelectedDoc(doc)}
-              className="block w-full text-left p-3 rounded-md text-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+              onClick={() => toggleReadStatus(doc.title)}
+              className={`px-3 py-1 rounded text-sm ${readDocuments[doc.title] ? "bg-green-500 text-white" : "bg-gray-300 text-gray-700"}`}
             >
-              {doc.title}
-            </button>
-            <button
-              onClick={() => toggleReadStatus(doc.id)}
-              className={`mt-2 px-3 py-1 text-white rounded-md text-sm transition ${
-                readDocuments[doc.id] ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600"
-              }`}
-            >
-              {readDocuments[doc.id] ? "Mark as Unread" : "Mark as Read"}
+              {readDocuments[doc.title] ? "Mark as Unread" : "Mark as Read"}
             </button>
           </div>
-        ))}
-      </div>
-
-      <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md w-full lg:w-3/4 min-h-[85vh]">
-        {selectedDoc ? <PdfViewer file={selectedDoc.file} /> : <p className="text-gray-500 text-center">Select a document to view.</p>}
-      </div>
+          <iframe
+            src={`http://localhost:5001/uploads/${doc.filename}`}
+            title={doc.title}
+            className="w-full h-64 mt-3 border"
+          ></iframe>
+        </div>
+      ))}
     </div>
   );
 }

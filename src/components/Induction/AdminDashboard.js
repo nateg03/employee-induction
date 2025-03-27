@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { FaUserPlus, FaSignOutAlt, FaTrash, FaUsers, FaSearch } from "react-icons/fa";
+import { FaUserPlus, FaSignOutAlt, FaTrash, FaUsers } from "react-icons/fa";
+
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
@@ -10,6 +11,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
+ 
   // ✅ Fetch Users with Progress
   const fetchUsers = async () => {
     try {
@@ -38,6 +40,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchUsers();
   }, []);
+  
 
   // ✅ Search Users
   useEffect(() => {
@@ -47,6 +50,8 @@ export default function AdminDashboard() {
     );
     setFilteredUsers(results);
   }, [search, users]);
+
+  
 
   // ✅ Add User
   const handleAddUser = async () => {
@@ -96,7 +101,7 @@ export default function AdminDashboard() {
       <aside className="w-64 bg-gray-800 text-gray-200 p-6 flex flex-col justify-between shadow-lg">
         <div>
           <h1 className="text-xl font-bold text-blue-400 flex items-center">
-            <FaUsers className="mr-2" /> COMS Admin
+            <FaUsers className="mr-2" /> COMS Admin Dashboard
           </h1>
           <div className="mt-6">
             <input
@@ -120,36 +125,46 @@ export default function AdminDashboard() {
       <div className="flex-1 p-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* ADD USER FORM */}
-          <div className="bg-white p-6 rounded-lg shadow-lg border-t-4 border-blue-500">
-            <h2 className="text-lg font-semibold mb-3 text-blue-600">Add New User</h2>
-            <input
-              type="text"
-              placeholder="Username"
-              value={newUser.username}
-              onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-              className="w-full mb-3 p-3 border border-gray-300 rounded bg-gray-100"
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              value={newUser.email}
-              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-              className="w-full mb-3 p-3 border border-gray-300 rounded bg-gray-100"
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={newUser.password}
-              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-              className="w-full mb-3 p-3 border border-gray-300 rounded bg-gray-100"
-            />
-            <button
-              onClick={handleAddUser}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg flex items-center justify-center mt-2 transition-all duration-300 transform hover:scale-105 shadow-lg"
-            >
-              <FaUserPlus className="mr-2" /> Add User
-            </button>
-          </div>
+<div className="bg-white p-6 rounded-lg shadow-lg border-t-4 border-blue-500">
+  <h2 className="text-lg font-semibold mb-3 text-blue-600">Add New User</h2>
+  <input
+    type="text"
+    placeholder="Username"
+    value={newUser.username}
+    onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+    className="w-full mb-3 p-3 border border-gray-300 rounded bg-gray-100"
+  />
+  <input
+    type="email"
+    placeholder="Email"
+    value={newUser.email}
+    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+    className="w-full mb-3 p-3 border border-gray-300 rounded bg-gray-100"
+  />
+  <input
+    type="password"
+    placeholder="Password"
+    value={newUser.password}
+    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+    className="w-full mb-3 p-3 border border-gray-300 rounded bg-gray-100"
+  />
+  <select
+    value={newUser.role}
+    onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+    className="w-full mb-3 p-3 border border-gray-300 rounded bg-gray-100 text-gray-700"
+  >
+    <option value="employee">Employee</option>
+    <option value="admin">Admin</option>
+  </select>
+  <button
+    onClick={handleAddUser}
+    className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg flex items-center justify-center mt-2 transition-all duration-300 transform hover:scale-105 shadow-lg"
+  >
+    <FaUserPlus className="mr-2" /> Add User
+  </button>
+  {message && <p className="text-center mt-2 text-gray-600">{message}</p>}
+</div>
+
 
           {/* USER LIST */}
           <div className="bg-white p-6 rounded-lg shadow-lg border-t-4 border-blue-500">
@@ -189,9 +204,37 @@ export default function AdminDashboard() {
                   )
                 )}
               </div>
+              
             )}
+
           </div>
         </div>
+     {/* Upload Section */}
+<div className="bg-white p-6 mt-8 rounded-lg shadow border border-gray-300">
+  <h2 className="text-lg font-semibold mb-3 text-blue-600">Upload Document</h2>
+  <form
+    onSubmit={async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      try {
+        await axios.post("http://localhost:5001/documents/upload", formData);
+        alert("✅ Document uploaded!");
+        e.target.reset();
+      } catch (err) {
+        console.error("Upload error:", err);
+        alert("❌ Upload failed");
+      }
+    }}
+  >
+    <input name="title" type="text" placeholder="Document Title" required className="w-full mb-2 p-2 border rounded" />
+    <input name="file" type="file" accept="application/pdf" required className="w-full mb-2" />
+    <button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+      Upload
+    </button>
+  </form>
+</div>
+
+
       </div>
     </div>
   );

@@ -115,4 +115,112 @@ router.post("/save-progress", verifyToken, (req, res) => {
     });
 });
 
+// ✅ Delete User
+router.delete("/users/:id", verifyToken, (req, res) => {
+    const userId = req.params.id;
+
+    if (req.user.role !== "admin") {
+        return res.status(403).json({ error: "Unauthorized action" });
+    }
+
+    db.query("DELETE FROM users WHERE id = ?", [userId], (err) => {
+        if (err) {
+            console.error("❌ Delete User Error:", err);
+            return res.status(500).json({ error: "Failed to delete user" });
+        }
+        res.json({ message: "✅ User deleted successfully" });
+    });
+});
+  
+// ✅ Get all documents
+router.get("/documents", (req, res) => {
+    db.query("SELECT * FROM documents", (err, results) => {
+      if (err) {
+        console.error("❌ Error fetching documents:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+      res.json(results);
+    });
+  });
+  
+  // ✅ Add a new document
+  router.post("/documents", (req, res) => {
+    const { title, filename } = req.body;
+  
+    if (!title || !filename) {
+      return res.status(400).json({ error: "Title and filename are required" });
+    }
+  
+    db.query(
+      "INSERT INTO documents (title, filename) VALUES (?, ?)",
+      [title, filename],
+      (err) => {
+        if (err) {
+          console.error("❌ Error adding document:", err);
+          return res.status(500).json({ error: "Failed to add document" });
+        }
+        res.json({ message: "✅ Document added successfully" });
+      }
+    );
+  });
+  
+  // ✅ Delete a document by ID
+  router.delete("/documents/:id", (req, res) => {
+    const documentId = req.params.id;
+  
+    db.query("DELETE FROM documents WHERE id = ?", [documentId], (err) => {
+      if (err) {
+        console.error("❌ Error deleting document:", err);
+        return res.status(500).json({ error: "Failed to delete document" });
+      }
+      res.json({ message: "✅ Document deleted successfully" });
+    });
+  });
+  
+  // ✅ Get all documents
+router.get("/documents", (req, res) => {
+    db.query("SELECT * FROM documents", (err, results) => {
+      if (err) {
+        console.error("❌ Error fetching documents:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+      res.json(results);
+    });
+  });
+  
+  // ✅ Add a new document
+  router.post("/documents", (req, res) => {
+    const { title, filename } = req.body;
+  
+    if (!title || !filename) {
+      return res.status(400).json({ error: "Title and filename are required" });
+    }
+  
+    db.query(
+      "INSERT INTO documents (title, filename) VALUES (?, ?)",
+      [title, filename],
+      (err) => {
+        if (err) {
+          console.error("❌ Error adding document:", err);
+          return res.status(500).json({ error: "Failed to add document" });
+        }
+        res.json({ message: "✅ Document added successfully" });
+      }
+    );
+  });
+  
+  // ✅ Delete a document by ID
+  router.delete("/documents/:id", (req, res) => {
+    const documentId = req.params.id;
+  
+    db.query("DELETE FROM documents WHERE id = ?", [documentId], (err) => {
+      if (err) {
+        console.error("❌ Error deleting document:", err);
+        return res.status(500).json({ error: "Failed to delete document" });
+      }
+      res.json({ message: "✅ Document deleted successfully" });
+    });
+  });
+  
+
 module.exports = router;

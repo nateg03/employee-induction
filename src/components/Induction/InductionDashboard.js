@@ -4,7 +4,7 @@ import ProgressTracker from "./ProgressTracker";
 import { AuthContext } from "../auth/AuthContext";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { FaSignOutAlt, FaBookOpen } from "react-icons/fa";
+import { FaSignOutAlt, FaBookOpen, FaUser, FaChartPie } from "react-icons/fa";
 
 export default function InductionDashboard() {
   const { auth, logout } = useContext(AuthContext);
@@ -70,31 +70,53 @@ export default function InductionDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white p-10 flex flex-col">
-      <div className="flex justify-between items-center mb-8 bg-white dark:bg-gray-800 shadow-lg p-4 rounded-lg border border-gray-300">
-        <h1 className="text-3xl font-bold flex items-center text-blue-600 dark:text-blue-400">
-          <FaBookOpen className="mr-3" /> Induction Portal
-        </h1>
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
+      {/* SIDEBAR NAVIGATION */}
+      <aside className="w-64 bg-gray-800 text-gray-200 p-6 flex flex-col justify-between shadow-lg">
+        <div>
+          <h1 className="text-xl font-bold text-blue-400 flex items-center">
+            <FaBookOpen className="mr-2" /> Induction
+          </h1>
+          <div className="mt-6 flex flex-col space-y-2">
+            <p className="text-gray-400 text-sm flex items-center">
+              <FaUser className="mr-2" /> {auth.user?.username}
+            </p>
+            <p className="text-gray-400 text-sm flex items-center">
+              <FaChartPie className="mr-2" /> {progress.toFixed(0)}% Complete
+            </p>
+          </div>
+        </div>
         <button
           onClick={() => logout(navigate)}
-          className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg flex items-center transition-all duration-300 transform hover:scale-105 shadow-lg"
+          className="mt-auto bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg flex items-center transition-all duration-300 transform hover:scale-105 shadow-lg"
         >
           <FaSignOutAlt className="mr-2" /> Logout
         </button>
-      </div>
+      </aside>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border-t-4 border-blue-500">
-          <h2 className="text-lg font-semibold mb-3 text-gray-700 dark:text-gray-200">Your Progress</h2>
-          <ProgressTracker progress={progress} />
-          <p className="text-center mt-3 text-gray-600 dark:text-gray-400">
-            {progress.toFixed(0)}% Complete
-          </p>
-        </div>
+      {/* MAIN CONTENT */}
+      <div className="flex-1 p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* COMPACT PROGRESS TRACKER */}
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md border-t-4 border-blue-500 w-full max-w-md mx-auto">
+            <h2 className="text-md font-semibold text-gray-700 dark:text-gray-200 flex items-center">
+              <FaChartPie className="mr-2 text-blue-500" /> Your Progress
+            </h2>
+            <div className="flex flex-col items-center mt-2">
+              <ProgressTracker progress={progress} />
+              <p className="text-sm mt-2 text-gray-600 dark:text-gray-400">
+                {progress.toFixed(0)}% Complete
+              </p>
+            </div>
+          </div>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border-t-4 border-blue-500">
-          <h2 className="text-lg font-semibold mb-3 text-gray-700 dark:text-gray-200">Induction Documents</h2>
-          <DocumentList toggleReadStatus={toggleReadStatus} readDocuments={readDocuments} />
+          {/* DOCUMENT LIST */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-t-4 border-blue-500">
+            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 flex items-center">
+              <FaBookOpen className="mr-2 text-blue-500" /> Induction Documents
+            </h2>
+            <DocumentList toggleReadStatus={toggleReadStatus} readDocuments={readDocuments} />
+          </div>
         </div>
       </div>
     </div>
