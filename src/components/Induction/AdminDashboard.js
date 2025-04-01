@@ -200,29 +200,29 @@ export default function AdminDashboard() {
           </div>
         </section>
 
-        {/* Upload Document */}
         <section className="bg-white p-6 rounded-lg shadow border-t-4 border-blue-500">
-          <h2 className="text-lg font-semibold mb-3 text-blue-600">Upload Document</h2>
-          <form onSubmit={async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            try {
-              await axios.post("http://localhost:5001/documents/upload", formData);
-              alert("✅ Document uploaded!");
-              e.target.reset();
-              fetchDocuments();
-            } catch (err) {
-              console.error("Upload error:", err);
-              alert("❌ Upload failed");
-            }
-          }}>
-            <input name="title" type="text" placeholder="Document Title" required className="w-full mb-2 p-2 border rounded" />
-            <input name="file" type="file" accept="application/pdf" required className="w-full mb-2" />
-            <button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
-              Upload
-            </button>
-          </form>
-        </section>
+  <h2 className="text-lg font-semibold mb-3 text-blue-600">Upload Documents</h2>
+  <form onSubmit={async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    try {
+      await axios.post("http://localhost:5001/documents/upload-multiple", formData);
+      alert("✅ Documents uploaded!");
+      e.target.reset();
+      fetchDocuments();
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("❌ Upload failed");
+    }
+  }}>
+    {/* REMOVE title input — not needed anymore */}
+    <input name="files" type="file" multiple required accept="application/pdf" className="w-full mb-2" />
+    <button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+      Upload
+    </button>
+  </form>
+</section>
+
 
         {/* Uploaded Documents */}
         <section className="bg-white p-6 rounded-lg shadow border-t-4 border-blue-500">

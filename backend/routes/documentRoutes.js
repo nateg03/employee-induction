@@ -18,24 +18,29 @@ const upload = multer({ storage });
 const fs = require("fs");
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 
-// POST /documents/upload
-router.post("/upload", upload.single("file"), (req, res) => {
-  const { title } = req.body;
-  const filename = req.file.filename;
-
-  if (!title || !filename) {
-    return res.status(400).json({ error: "Missing title or file." });
-  }
-
-  const query = "INSERT INTO documents (title, filename) VALUES (?, ?)";
-  db.query(query, [title, filename], (err) => {
-    if (err) {
-      console.error("❌ Upload error:", err);
-      return res.status(500).json({ error: "Upload failed" });
+// POST /documents/upload-multiple
+router.post("/upload-multiple", upload.array("files", 10), (req, res) => {
+    const files = req.files;
+  
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: "No files uploaded." });
     }
-    res.json({ message: "✅ Document uploaded!" });
+  
+    const values = files.map((file) => {
+      const title = file.originalname.split(".").slice(0, -1).join("."); // use filename as title
+      return [title, file.filename];
+    });
+  
+    const query = "INSERT INTO documents (title, filename) VALUES ?";
+    db.query(query, [values], (err) => {
+      if (err) {
+        console.error("❌ Upload error:", err);
+        return res.status(500).json({ error: "Upload failed" });
+      }
+      res.json({ message: "✅ Documents uploaded!" });
+    });
   });
-});
+  
 
 // DELETE /documents/:id
 router.delete("/:id", (req, res) => {
