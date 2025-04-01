@@ -37,6 +37,43 @@ router.post("/upload", upload.single("file"), (req, res) => {
   });
 });
 
+// DELETE /documents/:id
+router.delete("/:id", (req, res) => {
+    const docId = req.params.id;
+  
+    // 1. First, get the filename from DB
+    const selectQuery = "SELECT filename FROM documents WHERE id = ?";
+    db.query(selectQuery, [docId], (err, results) => {
+      if (err || results.length === 0) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+  
+      const filename = results[0].filename;
+      const filePath = path.join(__dirname, "..", "uploads", filename);
+  
+      // 2. Delete the file first (optional if it exists)
+      fs.unlink(filePath, (fsErr) => {
+        if (fsErr && fsErr.code !== "ENOENT") {
+          console.error("❌ Failed to delete file:", fsErr);
+          return res.status(500).json({ error: "Failed to delete file" });
+        }
+  
+        // 3. Delete the record from DB
+        const deleteQuery = "DELETE FROM documents WHERE id = ?";
+        db.query(deleteQuery, [docId], (dbErr) => {
+          if (dbErr) {
+            console.error("❌ Failed to delete document from DB:", dbErr);
+            return res.status(500).json({ error: "Failed to delete document" });
+          }
+  
+          res.json({ message: "✅ Document deleted" });
+        });
+      });
+    });
+  });
+  
+  
+
 // GET /documents
 router.get("/", (req, res) => {
   db.query("SELECT * FROM documents", (err, results) => {
