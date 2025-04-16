@@ -4,6 +4,7 @@ import { AuthContext } from "../auth/AuthContext";
 import ProgressTracker from "./ProgressTracker";
 import { useNavigate } from "react-router-dom";
 import { FaSignOutAlt, FaBookOpen, FaUser, FaChartPie } from "react-icons/fa";
+import { motion } from "framer-motion";
 
 export default function InductionDashboard() {
   const { auth, logout } = useContext(AuthContext);
@@ -13,7 +14,6 @@ export default function InductionDashboard() {
   const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
 
-  // Fetch documents
   useEffect(() => {
     axios
       .get("http://localhost:5001/documents")
@@ -21,7 +21,6 @@ export default function InductionDashboard() {
       .catch((err) => console.error("❌ Failed to load documents:", err));
   }, []);
 
-  // Fetch progress
   useEffect(() => {
     if (!auth?.user) return;
     if (auth.user.role === "admin") {
@@ -37,7 +36,6 @@ export default function InductionDashboard() {
       .catch((err) => console.error("❌ Failed to load progress:", err));
   }, [auth, navigate]);
 
-  // Update progress based on read documents
   useEffect(() => {
     const readCount = Object.values(readDocuments).filter(Boolean).length;
     const totalCount = documents.length || 1;
@@ -64,94 +62,107 @@ export default function InductionDashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
-      {/* SIDEBAR */}
-      <aside className="w-64 bg-gray-800 text-gray-200 p-6 flex flex-col justify-between shadow-lg">
-        <div>
-          <h1 className="text-xl font-bold text-blue-400 flex items-center">
-            <FaBookOpen className="mr-2" /> Induction
-          </h1>
-          <div className="mt-6 flex flex-col space-y-2">
-            <p className="text-gray-400 text-sm flex items-center">
-              <FaUser className="mr-2" /> {auth.user?.username}
-            </p>
-            <p className="text-gray-400 text-sm flex items-center">
-              <FaChartPie className="mr-2" /> {progress.toFixed(0)}% Complete
-            </p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#f4f7fa] text-gray-900">
+      {/* HEADER */}
+      <header className="bg-[#003c64] text-white py-4 shadow-md flex items-center justify-between px-6">
+        <h1 className="text-2xl font-bold flex items-center">
+          <FaBookOpen className="mr-3 text-[#97d0ff]" />
+          Induction Dashboard
+        </h1>
         <button
           onClick={() => logout(navigate)}
-          className="mt-auto bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg flex items-center transition-all duration-300 transform hover:scale-105 shadow-lg"
+          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-md flex items-center gap-2"
         >
-          <FaSignOutAlt className="mr-2" /> Logout
+          <FaSignOutAlt /> Logout
         </button>
-      </aside>
+      </header>
 
       {/* MAIN */}
-      <div className="flex-1 p-8 overflow-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Progress Tracker */}
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md border-t-4 border-blue-500 w-full max-w-md mx-auto">
-            <h2 className="text-md font-semibold text-gray-700 dark:text-gray-200 flex items-center">
-              <FaChartPie className="mr-2 text-blue-500" /> Your Progress
-            </h2>
-            <div className="flex flex-col items-center mt-2">
-              <ProgressTracker progress={progress} />
-              <p className="text-sm mt-2 text-gray-600 dark:text-gray-400">
-                {progress.toFixed(0)}% Complete
-              </p>
-            </div>
+      <main className="p-6 max-w-7xl mx-auto space-y-10">
+        {/* PROGRESS */}
+        <motion.section
+          className="bg-white rounded-lg shadow-md border-t-4 border-[#0074cc] p-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h2 className="text-lg font-semibold text-[#003c64] mb-2 flex items-center">
+            <FaChartPie className="mr-2" />
+            Your Progress
+          </h2>
+          <div className="flex flex-col items-center mt-2">
+            <ProgressTracker progress={progress} />
+            <p className="text-sm mt-2 text-gray-600">{progress.toFixed(0)}% Complete</p>
           </div>
+        </motion.section>
 
-          {/* Document List */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border-t-4 border-blue-500">
-            <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center">
-              <FaBookOpen className="mr-2 text-blue-500" /> Induction Documents
-            </h2>
-            <ul className="space-y-3">
-              {documents.map((doc) => (
-                <li
-                  key={doc.id}
-                  className="flex justify-between items-center bg-gray-100 dark:bg-gray-700 p-3 rounded-lg shadow cursor-pointer hover:shadow-md"
-                  onClick={() => setSelectedDoc(doc)}
-                >
-                  <div>
-                    <p className="font-medium text-gray-800 dark:text-white">{doc.title}</p>
-                    <p className="text-sm text-gray-500">
-                      {readDocuments[doc.filename] ? "✅ Read" : "📄 Unread"}
-                    </p>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleReadStatus(doc.filename);
-                    }}
-                    className={`px-3 py-1 rounded text-white ${
-                      readDocuments[doc.filename] ? "bg-green-500" : "bg-blue-500"
-                    } hover:opacity-90`}
+        {/* DOCUMENT SELECTOR */}
+        <motion.section
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          {documents.map((doc) => {
+            const isRead = readDocuments[doc.filename];
+            const isSelected = selectedDoc?.id === doc.id;
+
+            return (
+              <motion.div
+                key={doc.id}
+                whileHover={{ scale: 1.03 }}
+                className={`rounded-lg shadow-md p-5 cursor-pointer transition-all duration-300 ${
+                  isSelected ? "border-4 border-[#0074cc] bg-[#e6f1fb]" : "bg-white border"
+                }`}
+                onClick={() => setSelectedDoc(doc)}
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-bold text-[#003c64] text-lg">{doc.title}</h3>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      isRead ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                    }`}
                   >
-                    {readDocuments[doc.filename] ? "Mark Unread" : "Mark Read"}
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    {isRead ? "Read" : "Unread"}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500 truncate">{doc.filename}</p>
+              </motion.div>
+            );
+          })}
+        </motion.section>
 
-            {selectedDoc && (
-              <div className="mt-6">
-                <h3 className="text-md font-bold text-blue-500 mb-2">
-                  Viewing: {selectedDoc.title}
-                </h3>
-                <iframe
-                  src={`http://localhost:5001/uploads/${selectedDoc.filename}`}
-                  className="w-full h-[600px] border rounded shadow"
-                  title={selectedDoc.title}
-                ></iframe>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+        {/* PDF VIEWER */}
+        {selectedDoc && (
+          <motion.section
+            className="bg-white p-6 rounded-lg shadow-lg border-t-4 border-[#0074cc]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-[#003c64]">
+                Viewing: {selectedDoc.title}
+              </h3>
+              <button
+                onClick={() => toggleReadStatus(selectedDoc.filename)}
+                className={`px-4 py-2 text-white rounded shadow ${
+                  readDocuments[selectedDoc.filename]
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                {readDocuments[selectedDoc.filename] ? "Mark as Unread" : "Mark as Read"}
+              </button>
+            </div>
+            <div className="overflow-hidden rounded border shadow">
+              <iframe
+                src={`http://localhost:5001/uploads/${selectedDoc.filename}`}
+                className="w-full h-[90vh]"
+                title={selectedDoc.title}
+              ></iframe>
+            </div>
+          </motion.section>
+        )}
+      </main>
     </div>
   );
 }
