@@ -2,13 +2,14 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { FaUserPlus, FaSignOutAlt, FaTrash, FaUsers } from "react-icons/fa";
 import { motion } from "framer-motion";
+import QuizSubmissions from "./QuizSubmissions";
+
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [newUser, setNewUser] = useState({ username: "", email: "", password: "", role: "employee" });
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [documents, setDocuments] = useState([]);
 
@@ -21,7 +22,6 @@ export default function AdminDashboard() {
       });
       setUsers(res.data);
       setFilteredUsers(res.data);
-      setLoading(false);
     } catch (err) {
       console.error("❌ Fetch Users Error:", err);
     }
@@ -95,36 +95,71 @@ export default function AdminDashboard() {
         <h1 className="text-2xl font-bold flex items-center">
           <FaUsers className="mr-3 text-[#97d0ff]" /> COMS Admin Dashboard
         </h1>
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-md flex items-center gap-2"
-        >
+        <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-md flex items-center gap-2">
           <FaSignOutAlt /> Logout
         </button>
       </motion.header>
 
       <main className="max-w-7xl mx-auto p-6 space-y-10">
+        {/* Add New User */}
         <motion.section className="bg-white p-6 rounded-lg shadow-lg border-t-4 border-[#4b9cd3]" initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <h2 className="text-xl font-semibold text-[#003c64] mb-4">Add New User</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <input type="text" placeholder="Username" value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} className="p-2 border rounded bg-gray-100" />
-            <input type="email" placeholder="Email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} className="p-2 border rounded bg-gray-100" />
-            <input type="password" placeholder="Password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} className="p-2 border rounded bg-gray-100" />
-            <select value={newUser.role} onChange={(e) => setNewUser({ ...newUser, role: e.target.value })} className="p-2 border rounded bg-gray-100">
+          <form autoComplete="off" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <input
+              type="text"
+              name="username"
+              autoComplete="off"
+              placeholder="Username"
+              value={newUser.username}
+              onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+              className="p-2 border rounded bg-gray-100"
+            />
+            <input
+              type="email"
+              name="email"
+              autoComplete="off"
+              placeholder="Email"
+              value={newUser.email}
+              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              className="p-2 border rounded bg-gray-100"
+            />
+            <input
+              type="password"
+              name="password"
+              autoComplete="new-password"
+              placeholder="Password"
+              value={newUser.password}
+              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+              className="p-2 border rounded bg-gray-100"
+            />
+            <select
+              name="role"
+              value={newUser.role}
+              onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+              className="p-2 border rounded bg-gray-100"
+              autoComplete="off"
+            >
               <option value="employee">Employee</option>
               <option value="admin">Admin</option>
             </select>
-          </div>
+          </form>
           <button onClick={handleAddUser} className="mt-4 bg-[#4b9cd3] hover:bg-[#367bb5] text-white px-4 py-2 rounded flex items-center gap-2">
             <FaUserPlus /> Add User
           </button>
           {message && <p className="mt-2 text-sm text-center text-gray-600">{message}</p>}
         </motion.section>
 
+        {/* Employees List */}
         <motion.section className="grid grid-cols-1 lg:grid-cols-2 gap-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
           {/* EMPLOYEES */}
           <motion.div className="bg-white p-6 rounded-lg shadow-md border-t-4 border-[#4b9cd3]" initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.3 }}>
-            <h3 className="text-lg font-bold text-[#003c64] mb-2">👷 Employees</h3>
+            <h3 className="text-lg font-bold text-[#003c64] mb-4">👷 Employees</h3>
+            <button
+              onClick={() => window.open("http://localhost:5001/export/users-csv")}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-md mb-4"
+            >
+              📥 Download User Progress CSV
+            </button>
             {filteredUsers.filter(u => u.role === "employee").map(user => (
               <motion.div key={user.id} className="bg-[#f8fafc] p-4 rounded-lg mb-3 flex justify-between items-center shadow-sm" whileHover={{ scale: 1.02 }}>
                 <div>
@@ -144,7 +179,7 @@ export default function AdminDashboard() {
 
           {/* ADMINS */}
           <motion.div className="bg-white p-6 rounded-lg shadow-md border-t-4 border-[#4b9cd3]" initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.3 }}>
-            <h3 className="text-lg font-bold text-[#003c64] mb-2">🛠 Admins</h3>
+            <h3 className="text-lg font-bold text-[#003c64] mb-4">🛠 Admins</h3>
             {filteredUsers.filter(u => u.role === "admin").map(user => (
               <motion.div key={user.id} className="bg-[#f8fafc] p-4 rounded-lg mb-3 flex justify-between items-center shadow-sm" whileHover={{ scale: 1.02 }}>
                 <div>
@@ -162,7 +197,7 @@ export default function AdminDashboard() {
           </motion.div>
         </motion.section>
 
-        {/* Upload Docs */}
+        {/* Upload Documents */}
         <motion.section className="bg-white p-6 rounded-lg shadow border-t-4 border-[#4b9cd3]" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
           <h2 className="text-lg font-semibold mb-3 text-[#003c64]">Upload Documents</h2>
           <form onSubmit={async (e) => {
@@ -185,7 +220,7 @@ export default function AdminDashboard() {
           </form>
         </motion.section>
 
-        {/* Document List */}
+        {/* Uploaded Documents */}
         <motion.section className="bg-white p-6 rounded-lg shadow border-t-4 border-[#4b9cd3]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
           <h2 className="text-lg font-semibold mb-3 text-[#003c64]">Uploaded Documents</h2>
           <ul className="space-y-3">
@@ -199,6 +234,10 @@ export default function AdminDashboard() {
             ))}
           </ul>
         </motion.section>
+
+        <QuizSubmissions />
+
+
       </main>
     </motion.div>
   );

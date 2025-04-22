@@ -1,63 +1,76 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useContext } from "react";
+import axios from "axios";
+import { AuthContext } from "../auth/AuthContext";
 
 const questions = [
-  { id: 1, question: "🛡️ What is the main company policy?", correct: "Respect", options: ["Respect", "Ignore", "Forget"] },
-  { id: 2, question: "🔥 What should you do in case of a fire?", correct: "Evacuate", options: ["Stay", "Evacuate", "Run"] },
+  "What are the fire safety procedures at the Pavilion?",
+  "Who is your appointed supervisor?",
+  "What PPE must you wear while on site?",
+  "What should you do if you identify a hazard?",
+  "Where is the nearest fire exit from your workstation?",
 ];
 
-export default function Quiz({ setProgress }) {
+export default function Quiz() {
+  const { auth } = useContext(AuthContext);
   const [answers, setAnswers] = useState({});
-  const [completed, setCompleted] = useState(false);
-  const [selected, setSelected] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleAnswerClick = (qId, option) => {
-    setAnswers({ ...answers, [qId]: option });
-    setSelected({ ...selected, [qId]: option });
+  const handleChange = (index, value) => {
+    setAnswers({ ...answers, [index]: value });
   };
 
-  const handleSubmit = () => {
-    const correctAnswers = questions.filter((q) => answers[q.id] === q.correct).length;
-    setCompleted(true);
-    setProgress((correctAnswers / questions.length) * 100);
+  const handleSubmit = async () => {
+    if (!auth || !auth.user) return;
+
+    try {
+      await axios.post(
+        "http://localhost:5001/quiz/submit",
+        {
+          userId: auth.user.id,
+          answers,
+        },
+        {
+          headers: { Authorization: `Bearer ${auth.token}` },
+        }
+      );
+      setSubmitted(true);
+    } catch (err) {
+      console.error("❌ Submit error:", err);
+      setError("Failed to submit. Try again.");
+    }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 1 }}
-    >
-      <h2 className="text-3xl font-semibold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-        🧠 Induction Quiz
-      </h2>
-      {questions.map((q) => (
-        <motion.div
-          key={q.id}
-          className="mb-4 p-6 bg-gray-900 border border-gray-700 rounded-lg shadow-lg transition-all"
-        >
-          <p className="mb-3 text-lg">{q.question}</p>
-          {q.options.map((option) => (
-            <motion.div
-              key={option}
-              className={`cursor-pointer p-4 rounded-lg transition-all text-lg ${
-                selected[q.id] === option ? "bg-blue-500 text-white scale-105" : "bg-gray-800 text-gray-200"
-              }`}
-              onClick={() => handleAnswerClick(q.id, option)}
-            >
-              {option}
-            </motion.div>
+    <div className="bg-white p-6 rounded-lg shadow-md border-t-4 border-blue-400">
+      <h2 className="text-lg font-bold text-[#003c64] mb-4">📝 Site Induction Quiz</h2>
+      {submitted ? (
+        <div className="text-green-600 font-semibold">✅ Your answers have been submitted for review!</div>
+      ) : (
+        <>
+          {questions.map((q, i) => (
+            <div key={i} className="mb-4">
+              <label className="block font-semibold text-gray-700 mb-1">{q}</label>
+              <textarea
+                className="w-full p-2 border rounded bg-gray-50"
+                rows={3}
+                value={answers[i] || ""}
+                onChange={(e) => handleChange(i, e.target.value)}
+                placeholder="Type your answer here..."
+              />
+            </div>
           ))}
-        </motion.div>
-      ))}
-      {!completed && (
-        <motion.button
-          onClick={handleSubmit}
-          className="mt-5 px-8 py-4 text-xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:scale-105 transition-all"
-        >
-          ✅ Submit Quiz
-        </motion.button>
+
+          <button
+            onClick={handleSubmit}
+            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          >
+            Submit Answers
+          </button>
+
+          {error && <p className="text-red-500 mt-2">{error}</p>}
+        </>
       )}
-    </motion.div>
+    </div>
   );
 }

@@ -1,3 +1,116 @@
+/* Tailwind base reset (if using Tailwind) */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Fonts */
+body {
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background-color: #f4f8fc;
+  color: #1a202c;
+}
+
+/* General resets */
+* {
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar styling (optional) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #a0aec0;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #edf2f7;
+}
+
+/* Page transitions */
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0 }
+  to { opacity: 1 }
+}
+
+/* Fade out used for success banners / confetti messages */
+@keyframes fadeout {
+  0% { opacity: 1 }
+  80% { opacity: 1 }
+  100% { opacity: 0 }
+}
+.animate-fadeout {
+  animation: fadeout 5s ease-in-out forwards;
+}
+
+/* Button pop effect */
+.button-pop {
+  transition: all 0.3s ease-in-out;
+}
+.button-pop:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+/* Progress bar animation */
+@keyframes shine {
+  0% {
+    left: -100%;
+  }
+  50% {
+    left: 100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+.animate-shine {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  height: 100%;
+  width: 200%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shine 2s infinite;
+}
+
+/* PDF Viewer iframe */
+.pdf-viewer {
+  width: 100%;
+  height: 85vh;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  border: 2px solid #e2e8f0;
+  background: white;
+}
+
+/* Status badge */
+.status-badge {
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  background-color: #c6f6d5;
+  color: #276749;
+}
+
+/* Utility helpers */
+.text-muted {
+  color: #718096;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #003c64;
+}

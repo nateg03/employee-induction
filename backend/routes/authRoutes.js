@@ -31,7 +31,6 @@ router.get("/me", verifyToken, (req, res) => {
   );
 });
 
-// ✅ Fetch users with accurate progress
 router.get("/users-progress", verifyToken, (req, res) => {
   const totalDocsQuery = "SELECT COUNT(*) AS total FROM documents";
 
@@ -40,35 +39,34 @@ router.get("/users-progress", verifyToken, (req, res) => {
 
     const totalDocs = docResults[0].total;
 
-    if (totalDocs === 0) {
-      return db.query("SELECT id, username, email, role FROM users", (err, users) => {
-        if (err) return res.status(500).json({ error: "User fetch error" });
-        return res.json(users.map(u => ({ ...u, progress: 0 })));
-      });
-    }
-
-    const progressQuery = `
+    const query = `
       SELECT 
         u.id, u.username, u.email, u.role,
-        COUNT(r.document_name) AS readCount
+        COUNT(DISTINCT rp.document_name) AS readCount,
+        (SELECT COUNT(*) FROM quiz_submissions WHERE user_id = u.id AND approved = 1) AS quizApproved
       FROM users u
-      LEFT JOIN read_progress r ON u.id = r.user_id AND r.is_read = 1
-      LEFT JOIN documents d ON r.document_name = d.filename
+      LEFT JOIN read_progress rp ON rp.user_id = u.id AND rp.is_read = 1
       GROUP BY u.id
     `;
 
-    db.query(progressQuery, (err, results) => {
-      if (err) return res.status(500).json({ error: "Progress fetch error" });
+    db.query(query, (err, results) => {
+      if (err) return res.status(500).json({ error: "User progress error" });
 
-      const users = results.map(user => {
-        const progress = Math.round((user.readCount / totalDocs) * 100);
-        return { ...user, progress };
+      const totalRequired = totalDocs + 1; // +1 for quiz
+      const users = results.map(u => {
+        const completed = u.readCount + (u.quizApproved ? 1 : 0);
+        return {
+          ...u,
+          progress: Math.round((completed / totalRequired) * 100)
+        };
       });
 
       res.json(users);
     });
   });
 });
+
+
 
 // ✅ Register user
 router.post("/register", async (req, res) => {
@@ -115,23 +113,33 @@ router.post("/login", (req, res) => {
   });
 });
 
-// ✅ Fetch user progress
+// ✅ Fetch user progress including quiz approval
 router.get("/get-progress/:userId", verifyToken, (req, res) => {
-  db.query(
-    "SELECT document_name, is_read FROM read_progress WHERE user_id = ?",
-    [req.params.userId],
-    (err, results) => {
-      if (err) return res.status(500).json({ error: "Database error" });
+  const userId = req.params.userId;
 
-      const progressData = {};
-      results.forEach((row) => {
-        progressData[row.document_name] = row.is_read;
-      });
+  const progressData = {};
+
+  const readDocsQuery = "SELECT document_name, is_read FROM read_progress WHERE user_id = ?";
+  const quizQuery = "SELECT approved FROM quiz_submissions WHERE user_id = ? ORDER BY submitted_at DESC LIMIT 1";
+
+  db.query(readDocsQuery, [userId], (err, readResults) => {
+    if (err) return res.status(500).json({ error: "Failed to fetch read documents" });
+
+    readResults.forEach(row => {
+      progressData[row.document_name] = row.is_read;
+    });
+
+    db.query(quizQuery, [userId], (quizErr, quizResults) => {
+      if (quizErr) return res.status(500).json({ error: "Failed to fetch quiz status" });
+
+      // Save the quiz progress as "quiz" key
+      progressData["quiz"] = quizResults.length > 0 && quizResults[0].approved === 1;
 
       res.json(progressData);
-    }
-  );
+    });
+  });
 });
+
 
 // ✅ Save user progress
 router.post("/save-progress", verifyToken, (req, res) => {
