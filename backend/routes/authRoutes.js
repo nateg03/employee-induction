@@ -32,32 +32,40 @@ router.get("/me", verifyToken, (req, res) => {
 });
 
 router.get("/users-progress", verifyToken, (req, res) => {
-  const totalDocsQuery = "SELECT COUNT(*) AS total FROM documents";
+  const allDocsQuery = "SELECT filename FROM documents";
 
-  db.query(totalDocsQuery, (err, docResults) => {
-    if (err) return res.status(500).json({ error: "Document count error" });
+  db.query(allDocsQuery, (err, docResults) => {
+    if (err) return res.status(500).json({ error: "Error fetching documents" });
 
-    const totalDocs = docResults[0].total;
+    const totalDocs = docResults.map((d) => d.filename); // actual document filenames
+    const totalRequired = totalDocs.length + 2; // documents + 2 quizzes
 
     const query = `
       SELECT 
         u.id, u.username, u.email, u.role,
-        COUNT(DISTINCT rp.document_name) AS readCount,
-        (SELECT COUNT(*) FROM quiz_submissions WHERE user_id = u.id AND approved = 1) AS quizApproved
+        (SELECT COUNT(*) FROM read_progress WHERE user_id = u.id AND is_read = 1 AND document_name IN (?)) AS readCount,
+        (SELECT COUNT(*) FROM quiz_submissions WHERE user_id = u.id AND approved = 1) AS inductionApproved,
+        (SELECT COUNT(*) FROM manual_handling_submissions WHERE user_id = u.id AND approved = 1) AS mhApproved
       FROM users u
-      LEFT JOIN read_progress rp ON rp.user_id = u.id AND rp.is_read = 1
-      GROUP BY u.id
     `;
 
-    db.query(query, (err, results) => {
-      if (err) return res.status(500).json({ error: "User progress error" });
+    db.query(query, [totalDocs], (err, results) => {
+      if (err) return res.status(500).json({ error: "Error calculating user progress" });
 
-      const totalRequired = totalDocs + 1; // +1 for quiz
-      const users = results.map(u => {
-        const completed = u.readCount + (u.quizApproved ? 1 : 0);
+      const users = results.map(user => {
+        const readDocs = user.readCount || 0;
+        const inductionQuiz = user.inductionApproved ? 1 : 0;
+        const mhQuiz = user.mhApproved ? 1 : 0;
+
+        const completed = readDocs + inductionQuiz + mhQuiz;
+        const progress = Math.min(100, Math.round((completed / totalRequired) * 100));
+
         return {
-          ...u,
-          progress: Math.round((completed / totalRequired) * 100)
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          progress
         };
       });
 
@@ -181,41 +189,58 @@ router.delete("/users/:id", verifyToken, (req, res) => {
   });
 });
 
+// ✅ Accurate progress percentage including both quizzes and read documents
 router.get("/progress-percent/:userId", verifyToken, (req, res) => {
   const userId = req.params.userId;
 
-  const totalDocsQuery = "SELECT filename FROM documents";
+  const allDocsQuery = "SELECT filename FROM documents";
   const readDocsQuery = "SELECT document_name FROM read_progress WHERE user_id = ? AND is_read = 1";
-  const quizQuery = "SELECT approved FROM quiz_submissions WHERE user_id = ? ORDER BY submitted_at DESC LIMIT 1";
+  const inductionQuizQuery = "SELECT approved FROM quiz_submissions WHERE user_id = ? ORDER BY submitted_at DESC LIMIT 1";
+  const mhQuizQuery = "SELECT approved FROM manual_handling_submissions WHERE user_id = ? LIMIT 1";
 
-  db.query(totalDocsQuery, (err, totalDocsResult) => {
-    if (err) return res.status(500).json({ error: "Document count error" });
+  db.query(allDocsQuery, (err, allDocsResult) => {
+    if (err) return res.status(500).json({ error: "Error fetching documents" });
 
-    const allFilenames = totalDocsResult.map(doc => doc.filename);
-    const totalDocs = allFilenames.length;
+    const totalDocs = allDocsResult.map(d => d.filename); // all expected filenames
 
     db.query(readDocsQuery, [userId], (err, readDocsResult) => {
-      if (err) return res.status(500).json({ error: "Read doc count error" });
+      if (err) return res.status(500).json({ error: "Error fetching read documents" });
 
-      const readDocsSet = new Set(readDocsResult.map(row => row.document_name));
-      const validReadDocsCount = allFilenames.filter(filename => readDocsSet.has(filename)).length;
+      const readDocs = readDocsResult.map(r => r.document_name);
 
-      db.query(quizQuery, [userId], (err, quizResult) => {
-        if (err) return res.status(500).json({ error: "Quiz status error" });
+      // Count only matching filenames
+      const matchedDocs = totalDocs.filter(filename => readDocs.includes(filename));
+      const readCount = matchedDocs.length;
 
-        const quizApproved = quizResult.length > 0 && quizResult[0].approved === 1;
+      db.query(inductionQuizQuery, [userId], (err, quizResult) => {
+        if (err) return res.status(500).json({ error: "Induction quiz error" });
 
-        // ✅ Adjust total only if quiz exists
-        const totalItems = totalDocs + 1;
-        const completedItems = validReadDocsCount + (quizApproved ? 1 : 0);
+        const inductionApproved = quizResult.length > 0 && quizResult[0].approved === 1;
 
-        const progress = Math.round((completedItems / totalItems) * 100);
+        db.query(mhQuizQuery, [userId], (err, mhResult) => {
+          if (err) return res.status(500).json({ error: "Manual handling quiz error" });
 
-        res.json({ progress: Math.min(progress, 100), completedItems, totalItems });
+          const mhApproved = mhResult.length > 0 && mhResult[0].approved === 1;
+
+          const completed = readCount + (inductionApproved ? 1 : 0) + (mhApproved ? 1 : 0);
+          const total = totalDocs.length + 2; // docs + quizzes
+          const progress = Math.min(100, Math.round((completed / total) * 100));
+
+          res.json({
+            progress,
+            completedItems: completed,
+            totalItems: total,
+            totalDocs: totalDocs.length,
+            readDocs: readCount,
+            inductionApproved,
+            mhApproved
+          });
+        });
       });
     });
   });
 });
+
 
 
 module.exports = router;

@@ -1,10 +1,10 @@
-// InductionDashboard.js — Final Version with Progress Capped at 100%
 import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { AuthContext } from "../auth/AuthContext";
 import ProgressTracker from "./ProgressTracker";
 import { useNavigate } from "react-router-dom";
 import Quiz from "./Quiz";
+import ManualHandlingQuiz from "./ManualHandlingQuiz";
 import { FaSignOutAlt, FaBookOpen, FaCloud } from "react-icons/fa";
 
 export default function InductionDashboard() {
@@ -17,7 +17,6 @@ export default function InductionDashboard() {
 
   const fetchProgress = async () => {
     if (!auth?.user) return;
-
     try {
       const [docRes, progRes] = await Promise.all([
         axios.get(`http://localhost:5001/auth/get-progress/${auth.user.id}`, {
@@ -27,10 +26,8 @@ export default function InductionDashboard() {
           headers: { Authorization: `Bearer ${auth.token}` },
         }),
       ]);
-
       setReadDocuments(docRes.data || {});
-      const cappedProgress = Math.min(progRes.data.progress || 0, 100);
-      setProgress(cappedProgress);
+      setProgress(progRes.data.progress || 0);
     } catch (err) {
       console.error("❌ Failed to load progress:", err);
     }
@@ -46,15 +43,12 @@ export default function InductionDashboard() {
   };
 
   useEffect(() => {
-    if (auth?.user?.role === "admin") {
-      navigate("/admin");
-    }
+    if (auth?.user?.role === "admin") navigate("/admin");
   }, [auth, navigate]);
 
   useEffect(() => {
     fetchDocuments();
     fetchProgress();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth]);
 
   const toggleReadStatus = (filename) => {
@@ -88,6 +82,7 @@ export default function InductionDashboard() {
       <main className="max-w-[1600px] mx-auto p-6 space-y-10">
         <ProgressTracker progress={progress} />
 
+        {/* DOCUMENTS */}
         <div className="grid grid-cols-1 xl:grid-cols-[400px_1fr] gap-6 mt-6">
           <div className="bg-white p-5 rounded-lg shadow border-t-4 border-blue-400 max-h-[calc(100vh-250px)] overflow-y-auto">
             <h2 className="text-xl font-semibold text-[#003c64] mb-4">📚 Induction Documents</h2>
@@ -142,14 +137,21 @@ export default function InductionDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow border-t-4 border-blue-400 flex flex-col items-center text-center">
-            <FaCloud className="text-4xl text-blue-500 mb-2" />
-            <h3 className="text-lg font-semibold mb-1 text-[#003c64]">BreatheHR Integration</h3>
-            <p className="text-sm text-gray-600">Coming soon! This section will connect to BreatheHR.</p>
+        {/* TRAINING QUIZZES */}
+        <section className="bg-white rounded-lg shadow border-t-4 border-yellow-500 p-6">
+          <h2 className="text-xl font-bold text-[#003c64] mb-4">🧠 Induction Quizzes</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Quiz />
+            <ManualHandlingQuiz />
           </div>
-          <Quiz />
-        </div>
+        </section>
+
+        {/* BREATHEHR INTEGRATION */}
+        <section className="bg-white p-6 rounded-lg shadow border-t-4 border-blue-400 flex flex-col items-center text-center">
+          <FaCloud className="text-4xl text-blue-500 mb-2" />
+          <h3 className="text-lg font-semibold mb-1 text-[#003c64]">BreatheHR Integration</h3>
+          <p className="text-sm text-gray-600">Coming soon! This section will connect to BreatheHR.</p>
+        </section>
       </main>
     </div>
   );
