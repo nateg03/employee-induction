@@ -181,4 +181,41 @@ router.delete("/users/:id", verifyToken, (req, res) => {
   });
 });
 
+router.get("/progress-percent/:userId", verifyToken, (req, res) => {
+  const userId = req.params.userId;
+
+  const totalDocsQuery = "SELECT filename FROM documents";
+  const readDocsQuery = "SELECT document_name FROM read_progress WHERE user_id = ? AND is_read = 1";
+  const quizQuery = "SELECT approved FROM quiz_submissions WHERE user_id = ? ORDER BY submitted_at DESC LIMIT 1";
+
+  db.query(totalDocsQuery, (err, totalDocsResult) => {
+    if (err) return res.status(500).json({ error: "Document count error" });
+
+    const allFilenames = totalDocsResult.map(doc => doc.filename);
+    const totalDocs = allFilenames.length;
+
+    db.query(readDocsQuery, [userId], (err, readDocsResult) => {
+      if (err) return res.status(500).json({ error: "Read doc count error" });
+
+      const readDocsSet = new Set(readDocsResult.map(row => row.document_name));
+      const validReadDocsCount = allFilenames.filter(filename => readDocsSet.has(filename)).length;
+
+      db.query(quizQuery, [userId], (err, quizResult) => {
+        if (err) return res.status(500).json({ error: "Quiz status error" });
+
+        const quizApproved = quizResult.length > 0 && quizResult[0].approved === 1;
+
+        // ✅ Adjust total only if quiz exists
+        const totalItems = totalDocs + 1;
+        const completedItems = validReadDocsCount + (quizApproved ? 1 : 0);
+
+        const progress = Math.round((completedItems / totalItems) * 100);
+
+        res.json({ progress: Math.min(progress, 100), completedItems, totalItems });
+      });
+    });
+  });
+});
+
+
 module.exports = router;
