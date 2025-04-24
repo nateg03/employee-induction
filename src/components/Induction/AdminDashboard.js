@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import QuizSubmissions from "./QuizSubmissions";
 import QuizEditor from "./QuizEditor";
 import ManualHandlingSubmissions from "./ManualHandlingSubmissions";
+import ManualHandlingQuizEditor from "./ManualHandlingQuizEditor";
+
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
@@ -233,6 +235,7 @@ export default function AdminDashboard() {
 
         {/* Quiz Management */}
         <QuizEditor />
+        <ManualHandlingQuizEditor />
         <QuizSubmissions />
         <ManualHandlingSubmissions />
       </main>
