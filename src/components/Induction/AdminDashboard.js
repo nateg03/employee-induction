@@ -6,12 +6,17 @@ import QuizSubmissions from "./QuizSubmissions";
 import QuizEditor from "./QuizEditor";
 import ManualHandlingSubmissions from "./ManualHandlingSubmissions";
 import ManualHandlingQuizEditor from "./ManualHandlingQuizEditor";
-
+import '../../styles/adminDashboard.css';
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
-  const [newUser, setNewUser] = useState({ username: "", email: "", password: "", role: "employee" });
+  const [newUser, setNewUser] = useState({
+    username: "",
+    email: "",
+    password: "",
+    role: "employee",
+  });
   const [message, setMessage] = useState("");
   const [documents, setDocuments] = useState([]);
 
@@ -58,12 +63,9 @@ export default function AdminDashboard() {
   const handleDeleteUser = async (userId) => {
     try {
       const token = localStorage.getItem("token");
-  
       await axios.delete(`http://localhost:5001/auth/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-  
-      // ✅ Immediately update the frontend list
       setUsers((prev) => prev.filter((user) => user.id !== userId));
       setFilteredUsers((prev) => prev.filter((user) => user.id !== userId));
     } catch (err) {
@@ -71,12 +73,11 @@ export default function AdminDashboard() {
       alert("❌ Failed to delete user. Please try again.");
     }
   };
-  
 
   const handleDeleteDocument = async (id) => {
     try {
       await axios.delete(`http://localhost:5001/documents/${id}`);
-      setDocuments(prev => prev.filter(doc => doc.id !== id));
+      setDocuments((prev) => prev.filter((doc) => doc.id !== id));
     } catch (err) {
       console.error("❌ Delete Document Error:", err);
     }
@@ -90,155 +91,191 @@ export default function AdminDashboard() {
   const currentAdminEmail = JSON.parse(atob(localStorage.getItem("token").split(".")[1])).email;
 
   return (
-    <motion.div className="min-h-screen bg-gradient-to-br from-[#f4f8fc] to-[#d7e3f4] text-gray-800" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
-      <motion.header className="bg-[#003c64] text-white py-4 shadow-md flex items-center justify-between px-6" initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-        <h1 className="text-2xl font-bold flex items-center">
-          <FaUsers className="mr-3 text-[#97d0ff]" /> COMS Admin Dashboard
+    <motion.div className="dashboard-container">
+      {/* Header */}
+      <header className="dashboard-header">
+        <h1>
+          <FaUsers /> COMS Admin Dashboard
         </h1>
-        <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-md flex items-center gap-2">
+        <button onClick={handleLogout} className="button">
           <FaSignOutAlt /> Logout
         </button>
-      </motion.header>
+      </header>
 
-      <main className="max-w-7xl mx-auto p-6 space-y-10">
+      {/* Add User */}
+      <div className="section-card">
+        <h2>Add New User</h2>
+        <form className="grid-two" autoComplete="off">
+          <input
+            type="text"
+            name="username"
+            autoComplete="off"
+            placeholder="Username"
+            value={newUser.username}
+            onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+          />
+          <input
+            type="email"
+            name="email"
+            autoComplete="off"
+            placeholder="Email"
+            value={newUser.email}
+            onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+          />
+          <input
+            type="password"
+            name="password"
+            autoComplete="new-password"
+            placeholder="Password"
+            value={newUser.password}
+            onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+          />
+          <select
+            name="role"
+            value={newUser.role}
+            onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+          >
+            <option value="employee">Employee</option>
+            <option value="admin">Admin</option>
+          </select>
+        </form>
+        <button onClick={handleAddUser} className="button mt-4">
+          <FaUserPlus /> Add User
+        </button>
+        {message && <p className="alert mt-2">{message}</p>}
+      </div>
 
-        {/* Add User Section */}
-<motion.section className="bg-white p-6 rounded-lg shadow-lg border-t-4 border-[#4b9cd3]">
-  <h2 className="text-xl font-semibold text-[#003c64] mb-4">Add New User</h2>
-  <form autoComplete="off" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-    <input
-      type="text"
-      name="username"
-      autoComplete="off"
-      placeholder="Username"
-      value={newUser.username}
-      onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-      className="p-2 border rounded bg-gray-100"
-    />
-    <input
-      type="email"
-      name="email"
-      autoComplete="off"
-      placeholder="Email"
-      value={newUser.email}
-      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-      className="p-2 border rounded bg-gray-100"
-    />
-    <input
-      type="password"
-      name="password"
-      autoComplete="new-password"
-      placeholder="Password"
-      value={newUser.password}
-      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-      className="p-2 border rounded bg-gray-100"
-    />
-    <select
-      name="role"
-      value={newUser.role}
-      onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-      className="p-2 border rounded bg-gray-100"
-      autoComplete="off"
-    >
-      <option value="employee">Employee</option>
-      <option value="admin">Admin</option>
-    </select>
-  </form>
-
-  <button
-    onClick={handleAddUser}
-    className="mt-4 bg-[#4b9cd3] hover:bg-[#367bb5] text-white px-4 py-2 rounded flex items-center gap-2"
-  >
-    <FaUserPlus /> Add User
-  </button>
-
-  {message && <p className="mt-2 text-sm text-center text-gray-600">{message}</p>}
-</motion.section>
-
-
-        {/* Users */}
-        <motion.section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow-md border-t-4 border-[#4b9cd3]">
-            <h3 className="text-lg font-bold text-[#003c64] mb-4">👷 Employees</h3>
-            {filteredUsers.filter(u => u.role === "employee").map(user => (
-              <div key={user.id} className="bg-[#f8fafc] p-4 rounded-lg mb-3 flex justify-between items-center shadow-sm">
+      {/* Users */}
+      <div className="grid-two">
+        {/* Employees */}
+        <div className="section-card">
+          <h3>👷 Employees</h3>
+          {filteredUsers
+            .filter((u) => u.role === "employee")
+            .map((user) => (
+              <div key={user.id} className="user-card">
                 <div>
                   <p className="font-semibold">{user.username}</p>
                   <p className="text-sm text-gray-500">{user.email}</p>
-                  <p className="text-xs mt-1">Progress: <span className="text-blue-600 font-semibold">{typeof user.progress === "number" ? `${user.progress.toFixed(0)}%` : "0%"}</span></p>
-                  <div className="w-full bg-gray-200 h-2 rounded mt-1">
-                    <div className="bg-blue-500 h-2 rounded" style={{ width: `${user.progress || 0}%` }}></div>
+                  <div className="user-progress-bar">
+                    <div
+                      className="user-progress-fill"
+                      style={{ width: `${user.progress || 0}%` }}
+                    />
                   </div>
+                  <p className="text-xs mt-1">
+                    {user.progress?.toFixed(0)}% Complete
+                  </p>
                 </div>
-                <button onClick={() => handleDeleteUser(user.id)} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
+                <button
+                  onClick={() => handleDeleteUser(user.id)}
+                  className="button bg-red-500 hover:bg-red-600"
+                >
                   <FaTrash />
                 </button>
               </div>
             ))}
-          </div>
+        </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md border-t-4 border-[#4b9cd3]">
-            <h3 className="text-lg font-bold text-[#003c64] mb-4">🛠 Admins</h3>
-            {filteredUsers.filter(u => u.role === "admin").map(user => (
-              <div key={user.id} className="bg-[#f8fafc] p-4 rounded-lg mb-3 flex justify-between items-center shadow-sm">
+        {/* Admins */}
+        <div className="section-card">
+          <h3>🛠 Admins</h3>
+          {filteredUsers
+            .filter((u) => u.role === "admin")
+            .map((user) => (
+              <div key={user.id} className="user-card">
                 <div>
                   <p className="font-semibold">{user.username}</p>
                   <p className="text-sm text-gray-500">{user.email}</p>
                   <p className="text-xs text-gray-400 italic">Admin</p>
                 </div>
                 {user.email !== currentAdminEmail && (
-                  <button onClick={() => handleDeleteUser(user.id)} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
+                  <button
+                    onClick={() => handleDeleteUser(user.id)}
+                    className="button bg-red-500 hover:bg-red-600"
+                  >
                     <FaTrash />
                   </button>
                 )}
               </div>
             ))}
-          </div>
-        </motion.section>
+        </div>
+      </div>
 
-        {/* Documents Upload + List */}
-        <motion.section className="bg-white p-6 rounded-lg shadow border-t-4 border-[#4b9cd3]">
-          <h2 className="text-lg font-semibold mb-3 text-[#003c64]">Upload Documents</h2>
-          <form onSubmit={async (e) => {
+      {/* Documents Upload */}
+      <div className="section-card">
+        <h2>Upload Documents</h2>
+        <form
+          onSubmit={async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
             try {
-              await axios.post("http://localhost:5001/documents/upload-multiple", formData);
-              alert("✅ Documents uploaded!");
+              await axios.post(
+                "http://localhost:5001/documents/upload-multiple",
+                formData
+              );
               e.target.reset();
               fetchDocuments();
             } catch (err) {
               console.error("Upload error:", err);
               alert("❌ Upload failed");
             }
-          }}>
-            <input name="files" type="file" multiple required accept="application/pdf" className="w-full mb-3 p-2 border rounded" />
-            <button type="submit" className="bg-[#4b9cd3] hover:bg-[#367bb5] text-white px-4 py-2 rounded">
-              Upload
-            </button>
-          </form>
-        </motion.section>
+          }}
+        >
+          <input
+            name="files"
+            type="file"
+            multiple
+            required
+            accept="application/pdf"
+          />
+          <button type="submit" className="button mt-4">
+            Upload
+          </button>
+        </form>
+      </div>
 
-        <motion.section className="bg-white p-6 rounded-lg shadow border-t-4 border-[#4b9cd3]">
-          <h2 className="text-lg font-semibold mb-3 text-[#003c64]">Uploaded Documents</h2>
-          <ul className="space-y-3">
-            {documents.map((doc) => (
-              <li key={doc.id} className="flex justify-between items-center bg-[#f8f9fb] p-3 rounded border border-gray-200">
-                <span className="text-gray-800">{doc.title}</span>
-                <button onClick={() => handleDeleteDocument(doc.id)} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
-                  Delete
-                </button>
-              </li>
-            ))}
-          </ul>
-        </motion.section>
+      {/* Uploaded Docs */}
+      <div className="section-card">
+        <h2>Uploaded Documents</h2>
+        <ul className="space-y-3">
+          {documents.map((doc) => (
+            <li key={doc.id} className="doc-item">
+              <span>{doc.title}</span>
+              <button
+                onClick={() => handleDeleteDocument(doc.id)}
+                className="button bg-red-500 hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-        {/* Quiz Management */}
-        <QuizEditor />
-        <ManualHandlingQuizEditor />
-        <QuizSubmissions />
-        <ManualHandlingSubmissions />
-      </main>
+      {/* Quiz Editors Side-by-Side and Compact */}
+      <div className="grid-two">
+        <div className="section-card">
+          <div className="quiz-editor">
+            <QuizEditor />
+          </div>
+        </div>
+        <div className="section-card">
+          <div className="manual-handling-editor">
+            <ManualHandlingQuizEditor />
+          </div>
+        </div>
+      </div>
+
+      {/* Quiz Submissions */}
+      <div className="grid-two">
+        <div className="section-card">
+          <QuizSubmissions />
+        </div>
+        <div className="section-card">
+          <ManualHandlingSubmissions />
+        </div>
+      </div>
     </motion.div>
   );
 }

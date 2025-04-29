@@ -1,0 +1,215 @@
+/* admin-dashboard.css */
+
+/* Base Layout */
+.dashboard-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(to bottom right, #f4f8fc, #e2ebf5);
+  padding: 3rem 5rem; /* Spacious padding */
+  min-height: 100vh;
+  color: #2c3e50;
+  animation: fadeIn 0.5s ease-in-out;
+  max-width: 1600px; /* Added wider max width */
+  margin: 0 auto;
+}
+
+/* Fade-In Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.dashboard-header {
+  background-color: #003c64;
+  color: #fff;
+  padding: 1.5rem 3rem;
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3rem;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-header h1 {
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* Section Cards */
+.section-card {
+  background: #ffffff;
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.1);
+  margin-bottom: 3rem;
+  transition: all 0.3s ease;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Section Title */
+.section-card h2,
+.section-card h3 {
+  font-size: 1.5rem;
+  color: #003c64;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+/* Grid Layout */
+.grid-two {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); /* More spacious columns */
+  gap: 3rem;
+  margin-bottom: 3rem;
+}
+
+/* Inputs */
+input,
+select {
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background-color: #f9fafb;
+  transition: border 0.2s ease;
+  width: 100%;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #4b9cd3;
+  background-color: #fff;
+}
+
+/* Buttons */
+.button {
+  background: linear-gradient(to right, #4b9cd3, #367bb5);
+  color: white;
+  border: none;
+  padding: 1rem 1.5rem; /* More padding */
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+}
+
+.button:hover {
+  background: #367bb5;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(75, 156, 211, 0.4);
+}
+
+/* User Cards */
+.user-card {
+  background: #f9fbfc;
+  padding: 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.user-card:hover {
+  transform: scale(1.03);
+}
+
+.user-progress-bar {
+  height: 10px;
+  background-color: #e5e7eb;
+  border-radius: 5px;
+  margin-top: 1rem;
+  overflow: hidden;
+}
+
+.user-progress-fill {
+  height: 100%;
+  background-color: #4b9cd3;
+  transition: width 0.4s ease;
+}
+
+/* Document Items */
+.doc-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f4f6f8;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.doc-item:hover {
+  background-color: #e6eff5;
+}
+
+/* Alert Message */
+.alert {
+  color: #2c3e50;
+  font-size: 1rem;
+  margin-top: 1rem;
+}
+
+/* Quiz Editors (Compact, Scrollable) */
+.section-card .quiz-editor,
+.section-card .manual-handling-editor {
+  max-height: 500px; /* Set appropriate height */
+  overflow-y: auto;
+  padding-right: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background-color: #f4f7fc;
+}
+
+.section-card .quiz-editor h3,
+.section-card .manual-handling-editor h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #003c64;
+  margin-bottom: 1.5rem;
+}
+
+/* Scrollbar */
+.section-card .quiz-editor::-webkit-scrollbar,
+.section-card .manual-handling-editor::-webkit-scrollbar {
+  width: 8px;
+}
+
+.section-card .quiz-editor::-webkit-scrollbar-thumb,
+.section-card .manual-handling-editor::-webkit-scrollbar-thumb {
+  background-color: #d0d5dc;
+  border-radius: 10px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .grid-two {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .section-card {
+    max-width: 100%;
+    margin: 0;
+  }
+}

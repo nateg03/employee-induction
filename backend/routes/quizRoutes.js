@@ -5,9 +5,10 @@ const authenticateToken = require("../middleware/authMiddleware");
 const router = express.Router();
 
 // ======================
-// DERWENTWATER PAVILION QUIZ
+// DERWENTWATER PAVILION QUIZ ROUTES
 // ======================
 
+// Fetch Derwentwater Questions
 router.get("/typed-questions", (req, res) => {
   db.query("SELECT * FROM quiz_questions", (err, results) => {
     if (err) return res.status(500).json({ error: "Failed to fetch questions" });
@@ -15,6 +16,7 @@ router.get("/typed-questions", (req, res) => {
   });
 });
 
+// Add a Derwentwater Question
 router.post("/typed-questions", (req, res) => {
   const { question } = req.body;
   if (!question || !question.trim()) return res.status(400).json({ error: "Question is required" });
@@ -25,6 +27,7 @@ router.post("/typed-questions", (req, res) => {
   });
 });
 
+// Update a Derwentwater Question
 router.put("/typed-questions/:id", (req, res) => {
   const { question } = req.body;
   if (!question || !question.trim()) return res.status(400).json({ error: "Cannot be empty" });
@@ -35,6 +38,7 @@ router.put("/typed-questions/:id", (req, res) => {
   });
 });
 
+// Delete a Derwentwater Question
 router.delete("/typed-questions/:id", (req, res) => {
   db.query("DELETE FROM quiz_questions WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).json({ error: "Failed to delete question" });
@@ -42,39 +46,33 @@ router.delete("/typed-questions/:id", (req, res) => {
   });
 });
 
+// Submit Derwentwater Quiz Answers
 router.post("/submit", authenticateToken, (req, res) => {
   const { userId, answers } = req.body;
-  if (!answers || typeof answers !== "object") {
-    return res.status(400).json({ error: "Invalid answers" });
-  }
+  if (!answers || typeof answers !== "object") return res.status(400).json({ error: "Invalid answers" });
 
   db.query("SELECT * FROM quiz_submissions WHERE user_id = ?", [userId], (err, results) => {
     if (err) return res.status(500).json({ error: "Database error" });
     if (results.length > 0) return res.status(400).json({ error: "Submission already exists" });
 
     const quizData = JSON.stringify(answers);
-    db.query(
-      "INSERT INTO quiz_submissions (user_id, answers, submitted_at) VALUES (?, ?, NOW())",
-      [userId, quizData],
-      (err) => {
-        if (err) return res.status(500).json({ error: "Failed to submit answers" });
-        res.json({ success: true });
-      }
-    );
+    db.query("INSERT INTO quiz_submissions (user_id, answers, submitted_at) VALUES (?, ?, NOW())", [userId, quizData], (err) => {
+      if (err) return res.status(500).json({ error: "Failed to submit answers" });
+      res.json({ success: true });
+    });
   });
 });
 
+// Get Derwentwater Quiz Submission Status
 router.get("/status/:userId", authenticateToken, (req, res) => {
-  const userId = req.params.userId;
-  db.query("SELECT approved FROM quiz_submissions WHERE user_id = ?", [userId], (err, results) => {
+  db.query("SELECT approved FROM quiz_submissions WHERE user_id = ?", [req.params.userId], (err, results) => {
     if (err) return res.status(500).json({ error: "Failed to check status" });
-
     if (results.length === 0) return res.json({ submitted: false, approved: false });
-
     res.json({ submitted: true, approved: results[0].approved === 1 });
   });
 });
 
+// Get All Derwentwater Quiz Submissions
 router.get("/submissions", authenticateToken, (req, res) => {
   const sql = `
     SELECT qs.id, qs.user_id, qs.answers, qs.submitted_at, qs.approved,
@@ -89,6 +87,7 @@ router.get("/submissions", authenticateToken, (req, res) => {
   });
 });
 
+// Approve/Unapprove/Delete Derwentwater Submissions
 router.post("/approve/:id", authenticateToken, (req, res) => {
   db.query("UPDATE quiz_submissions SET approved = 1 WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).json({ error: "Failed to approve submission" });
@@ -110,26 +109,27 @@ router.delete("/delete/:id", authenticateToken, (req, res) => {
   });
 });
 
+
 // ======================
-// MANUAL HANDLING QUIZ
+// MANUAL HANDLING QUIZ ROUTES
 // ======================
 
-router.get("/manual-handling", (req, res) => {
+// Fetch Manual Handling Questions (NEW ROUTE)
+router.get("/manual-handling-questions", (req, res) => {
   const sql = `
     SELECT id, question, option_a, option_b, option_c, option_d, option_e, correct_answer, multi_select
     FROM manual_handling_questions
   `;
   db.query(sql, (err, results) => {
-    if (err) return res.status(500).json({ error: "Failed to load manual handling quiz" });
+    if (err) return res.status(500).json({ error: "Failed to load manual handling questions" });
     res.json(results);
   });
 });
 
+// Submit Manual Handling Answers
 router.post("/manual-handling/submit", authenticateToken, (req, res) => {
   const { userId, answers } = req.body;
-  if (!answers || typeof answers !== "object") {
-    return res.status(400).json({ error: "Invalid answers" });
-  }
+  if (!answers || typeof answers !== "object") return res.status(400).json({ error: "Invalid answers" });
 
   db.query("SELECT * FROM manual_handling_submissions WHERE user_id = ?", [userId], (err, results) => {
     if (err) return res.status(500).json({ error: "Database error" });
@@ -147,23 +147,22 @@ router.post("/manual-handling/submit", authenticateToken, (req, res) => {
   });
 });
 
+// Check Manual Handling Quiz Status
 router.get("/manual-handling/status/:userId", authenticateToken, (req, res) => {
-  const userId = req.params.userId;
-  db.query("SELECT approved FROM manual_handling_submissions WHERE user_id = ?", [userId], (err, results) => {
+  db.query("SELECT approved FROM manual_handling_submissions WHERE user_id = ?", [req.params.userId], (err, results) => {
     if (err) return res.status(500).json({ error: "Status check failed" });
-
     if (results.length === 0) return res.json({ submitted: false, approved: false });
-
     res.json({ submitted: true, approved: results[0].approved === 1 });
   });
 });
 
+// Get All Manual Handling Submissions
 router.get("/manual-handling/submissions", authenticateToken, (req, res) => {
   const sql = `
     SELECT mhs.id, mhs.user_id, mhs.answers, mhs.submitted_at, mhs.approved,
            u.username, u.email
     FROM manual_handling_submissions mhs
-    JOIN users u ON u.id = mhs.user_id
+    JOIN users u ON mhs.user_id = u.id
     ORDER BY mhs.submitted_at DESC
   `;
   db.query(sql, (err, results) => {
@@ -172,6 +171,7 @@ router.get("/manual-handling/submissions", authenticateToken, (req, res) => {
   });
 });
 
+// Approve/Unapprove/Delete Manual Handling Submissions
 router.post("/manual-handling/approve/:id", authenticateToken, (req, res) => {
   db.query("UPDATE manual_handling_submissions SET approved = 1 WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).json({ error: "Approval failed" });
@@ -189,28 +189,25 @@ router.post("/manual-handling/unapprove/:id", authenticateToken, (req, res) => {
 router.delete("/manual-handling/delete/:id", authenticateToken, (req, res) => {
   db.query("DELETE FROM manual_handling_submissions WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).json({ error: "Delete failed" });
-    res.json({ success: true });
+    res.json({ message: "✅ Submission deleted" });
   });
 });
 
-// PUT — Update Manual Handling Question
+// Update Manual Handling Question
 router.put("/manual-handling/questions/:id", authenticateToken, (req, res) => {
-    const { question, option_a, option_b, option_c, option_d, option_e, correct_answer, multi_select } = req.body;
-  
-    db.query(
-      "UPDATE manual_handling_questions SET question = ?, option_a = ?, option_b = ?, option_c = ?, option_d = ?, option_e = ?, correct_answer = ?, multi_select = ? WHERE id = ?",
-      [question, option_a, option_b, option_c, option_d, option_e, correct_answer, multi_select, req.params.id],
-      (err) => {
-        if (err) {
-          console.error("❌ Failed to update manual handling question:", err);
-          return res.status(500).json({ error: "Failed to update question" });
-        }
-        res.json({ message: "✅ Question updated" });
-      }
-    );
-  });
-  
+  const { question, option_a, option_b, option_c, option_d, option_e, correct_answer, multi_select } = req.body;
 
+  db.query(
+    "UPDATE manual_handling_questions SET question = ?, option_a = ?, option_b = ?, option_c = ?, option_d = ?, option_e = ?, correct_answer = ?, multi_select = ? WHERE id = ?",
+    [question, option_a, option_b, option_c, option_d, option_e, correct_answer, multi_select, req.params.id],
+    (err) => {
+      if (err) return res.status(500).json({ error: "Failed to update question" });
+      res.json({ message: "✅ Question updated" });
+    }
+  );
+});
+
+// Delete Manual Handling Question
 router.delete("/manual-handling/questions/:id", (req, res) => {
   db.query("DELETE FROM manual_handling_questions WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).json({ error: "Failed to delete question" });

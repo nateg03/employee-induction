@@ -5,7 +5,8 @@ import ProgressTracker from "./ProgressTracker";
 import { useNavigate } from "react-router-dom";
 import Quiz from "./Quiz";
 import ManualHandlingQuiz from "./ManualHandlingQuiz";
-import { FaSignOutAlt, FaBookOpen, FaCloud } from "react-icons/fa";
+import { FaSignOutAlt, FaBookOpen, FaCloud } from "react-icons/fa"; 
+import '../../styles/inductionDashboard.css'; 
 
 export default function InductionDashboard() {
   const { auth, logout } = useContext(AuthContext);
@@ -55,6 +56,12 @@ export default function InductionDashboard() {
     const updated = { ...readDocuments, [filename]: !readDocuments[filename] };
     setReadDocuments(updated);
 
+    // Get the button element and toggle the 'read' class for style changes
+    const button = document.querySelector(`[data-filename="${filename}"]`);
+    if (button) {
+      button.classList.toggle('read', updated[filename]); 
+    }
+
     axios
       .post(
         "http://localhost:5001/auth/save-progress",
@@ -66,14 +73,14 @@ export default function InductionDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f7fa] text-gray-800">
-      <header className="bg-[#003c64] text-white p-6 shadow flex justify-between items-center">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <FaBookOpen className="text-blue-300" /> Induction Dashboard
+    <div className="dashboard-container">
+      <header className="dashboard-header">
+        <h1>
+          <FaBookOpen /> Induction Dashboard
         </h1>
         <button
           onClick={() => logout(navigate)}
-          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded flex items-center gap-2"
+          className="button"
         >
           <FaSignOutAlt /> Logout
         </button>
@@ -98,14 +105,15 @@ export default function InductionDashboard() {
                   <div className="flex justify-between items-center">
                     <span className="font-medium">{doc.title}</span>
                     <button
+                      data-filename={doc.filename}
                       onClick={(e) => {
                         e.stopPropagation();
-                        toggleReadStatus(doc.filename);
+                        toggleReadStatus(doc.filename); 
                       }}
                       className={`text-xs font-semibold px-4 py-1 rounded-full transition-all duration-300 transform ${
                         readDocuments[doc.filename]
-                          ? "bg-gradient-to-r from-green-400 to-green-600 text-white border border-green-600 hover:scale-105"
-                          : "bg-gradient-to-r from-blue-400 to-blue-600 text-white border border-blue-600 hover:scale-105"
+                          ? "mark-read read"
+                          : "mark-read"
                       }`}
                     >
                       {readDocuments[doc.filename] ? "✓ Mark Unread" : "📘 Mark as Read"}
