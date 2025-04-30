@@ -9,7 +9,7 @@ export default function ManualHandlingQuizEditor() {
 
   const fetchQuestions = async () => {
     try {
-      const res = await axios.get("http://localhost:5001/quiz/manual-handling");
+      const res = await axios.get("http://localhost:5001/quiz/manual-handling-questions");
       setQuestions(res.data);
     } catch (err) {
       console.error("❌ Failed to load questions", err);
@@ -54,9 +54,7 @@ export default function ManualHandlingQuizEditor() {
         `http://localhost:5001/quiz/manual-handling/questions/${id}`,
         edits[id],
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
       setEditMode((prev) => ({ ...prev, [id]: false }));
@@ -86,8 +84,8 @@ export default function ManualHandlingQuizEditor() {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow border-t-4 border-yellow-400">
-      <h2 className="text-xl font-bold text-[#003c64] mb-4">🛠 Manual Handling Quiz Editor</h2>
+    <div className="manual-handling-editor">
+      <h2>🛠 Manual Handling Quiz Editor</h2>
       {questions.map((q) => (
         <div key={q.id} className="border rounded p-4 mb-4 shadow-sm">
           {editMode[q.id] ? (

@@ -4,23 +4,12 @@ import axios from "axios";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [auth, setAuth] = useState(() => {
-    try {
-      const storedAuth = localStorage.getItem("auth");
-      return storedAuth ? JSON.parse(storedAuth) : { user: null, token: null };
-    } catch (error) {
-      console.error("❌ Error parsing auth data:", error);
-      return { user: null, token: null };
-    }
-  });
-
-  const [loading, setLoading] = useState(true);
+  const [auth, setAuth] = useState({ user: null, token: null });
+  const [loading, setLoading] = useState(true); // Block redirects until this is false
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-
     if (!token) {
-      console.log("⚠️ No token found, staying on page.");
       setLoading(false);
       return;
     }
@@ -31,24 +20,33 @@ export const AuthProvider = ({ children }) => {
       })
       .then((res) => {
         setAuth({ user: res.data.user, token });
-        console.log("✅ Session restored:", res.data.user);
+        localStorage.setItem("auth", JSON.stringify({ user: res.data.user, token }));
       })
-      .catch((err) => {
-        console.error("⚠️ Session expired, logging out...", err);
-        logout();
+      .catch(() => {
+        localStorage.removeItem("auth");
+        localStorage.removeItem("token");
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
-  const login = (userData) => {
-    console.log("✅ User Logged In:", userData);
-    localStorage.setItem("auth", JSON.stringify(userData));
-    localStorage.setItem("token", userData.token);
-    setAuth(userData);
+  const login = async (email, password) => {
+    try {
+      const res = await axios.post("http://localhost:5001/auth/login", { email, password });
+      const { token, user } = res.data;
+
+      localStorage.setItem("auth", JSON.stringify({ user, token }));
+      localStorage.setItem("token", token);
+      setAuth({ user, token });
+      return true;
+    } catch (err) {
+      console.error("❌ Login failed:", err);
+      return false;
+    }
   };
 
   const logout = () => {
-    console.log("🔴 Logging out...");
     localStorage.removeItem("auth");
     localStorage.removeItem("token");
     setAuth({ user: null, token: null });

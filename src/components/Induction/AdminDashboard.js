@@ -88,7 +88,18 @@ export default function AdminDashboard() {
     window.location.href = "/login";
   };
 
-  const currentAdminEmail = JSON.parse(atob(localStorage.getItem("token").split(".")[1])).email;
+  let currentAdminEmail = null;
+const token = localStorage.getItem("token");
+
+if (token) {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    currentAdminEmail = payload.email;
+  } catch (err) {
+    console.error("❌ Failed to decode token:", err);
+  }
+}
+
 
   return (
     <motion.div className="dashboard-container">
